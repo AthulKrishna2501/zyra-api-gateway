@@ -3,12 +3,11 @@ package clients
 import (
 	"log"
 
+	pb "github.com/AthulKrishna2501/proto-repo/auth"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/events"
-	pb "github.com/AthulKrishna2501/zyra-api-gateway/internals/proto"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/services"
-	"github.com/gin-gonic/gin"
-
 	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/config"
+	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -36,7 +35,7 @@ func InitServiceClient(c *config.Config) *ServiceClient {
 	}
 }
 
-func RegisterRoutes(eng *gin.Engine, cfg *config.Config) *ServiceClient {
+func RegisterAuthRoutes(eng *gin.Engine, cfg *config.Config) *ServiceClient {
 	svc := InitServiceClient(cfg)
 	if svc.Client == nil {
 		log.Fatal("Auth Service Client is nil!")

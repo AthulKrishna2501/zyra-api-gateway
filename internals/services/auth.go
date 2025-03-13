@@ -1,15 +1,15 @@
 package services
 
 import (
-	"encoding/json"
 	"log"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
+	pb "github.com/AthulKrishna2501/proto-repo/auth"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/events"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/models"
-	pb "github.com/AthulKrishna2501/zyra-api-gateway/internals/proto"
 	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/validator"
 	"github.com/gin-gonic/gin"
 )
@@ -37,7 +37,7 @@ func Register(ctx *gin.Context, c pb.AuthServiceClient, mq *events.RabbitMq) {
 	res, err := c.Register(ctx, grpcReq)
 
 	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		ctx.JSON(http.StatusInternalServerError,gin.H{"error":err.Error()})
 		return
 	}
 
@@ -45,10 +45,13 @@ func Register(ctx *gin.Context, c pb.AuthServiceClient, mq *events.RabbitMq) {
 	rng := rand.New(source)
 
 	otp := rng.Intn(900000) + 100000
+	otpStr := strconv.Itoa(otp)
 
-	err = mq.PublishOTP(body.Email, json.Number(rune(otp)).String())
+	err = mq.PublishOTP(body.Email, otpStr)
 	if err != nil {
 		log.Println("Failed to Publish OTP ", err)
+	} else {
+		log.Printf("OTP %s published for email %s", otpStr, body.Email)
 	}
 
 	ctx.JSON(int(res.Status), &res)
