@@ -4,7 +4,6 @@ import (
 	"log"
 
 	pb "github.com/AthulKrishna2501/proto-repo/auth"
-	"github.com/AthulKrishna2501/zyra-api-gateway/internals/events"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/services"
 	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/config"
 	"github.com/gin-gonic/gin"
@@ -13,8 +12,7 @@ import (
 )
 
 type ServiceClient struct {
-	Client   pb.AuthServiceClient
-	RabbitMq *events.RabbitMq
+	Client pb.AuthServiceClient
 }
 
 func InitServiceClient(c *config.Config) *ServiceClient {
@@ -24,14 +22,8 @@ func InitServiceClient(c *config.Config) *ServiceClient {
 		log.Fatal("Could not connect to auth client", err)
 	}
 
-	rabbitMQ, err := events.NewRabbitMq(c.RABBITMQ_URL)
-	if err != nil {
-		log.Fatal("Could not connect to RabbitMQ:", err)
-	}
-
 	return &ServiceClient{
-		Client:   pb.NewAuthServiceClient(conn),
-		RabbitMq: rabbitMQ,
+		Client: pb.NewAuthServiceClient(conn),
 	}
 }
 
@@ -44,7 +36,6 @@ func RegisterAuthRoutes(eng *gin.Engine, cfg *config.Config) *ServiceClient {
 	routes := eng.Group("/auth")
 	routes.POST("/register", svc.Register)
 	routes.POST("/login", svc.Login)
-	routes.POST("/send-otp", svc.SendOTP)
 	routes.POST("/verify-otp", svc.VerifyOTP)
 	routes.POST("/logout", svc.Logout)
 
@@ -52,16 +43,13 @@ func RegisterAuthRoutes(eng *gin.Engine, cfg *config.Config) *ServiceClient {
 }
 
 func (svc *ServiceClient) Register(ctx *gin.Context) {
-	services.Register(ctx, svc.Client, svc.RabbitMq)
+	services.Register(ctx, svc.Client)
 }
 
 func (svc *ServiceClient) Login(ctx *gin.Context) {
 	services.Login(ctx, svc.Client)
 }
 
-func (svc *ServiceClient) SendOTP(ctx *gin.Context) {
-	services.SendOTP(ctx, svc.Client)
-}
 func (svc *ServiceClient) VerifyOTP(ctx *gin.Context) {
 	services.VerifyOTP(ctx, svc.Client)
 }

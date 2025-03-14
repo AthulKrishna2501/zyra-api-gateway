@@ -14,7 +14,6 @@ type Config struct {
 	VENDOR_SVC_URL      string `mapstructure:"VENDOR_SVC_URL"`
 	MESSAGE_SERVICE_URL string `mapstructure:"MESSAGE_SVC_URL"`
 	CHAT_SERVICE_URL    string `mapstructure:"CHAT_SVC_URL"`
-	RABBITMQ_URL        string `mapstructure:"RABBITMQ_URL"`
 }
 
 func LoadConfig() (cfg Config, err error) {
