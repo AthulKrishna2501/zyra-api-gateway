@@ -37,6 +37,7 @@ func RegisterAuthRoutes(eng *gin.Engine, cfg *config.Config) *ServiceClient {
 	routes.POST("/register", svc.Register)
 	routes.POST("/login", svc.Login)
 	routes.POST("/verify-otp", svc.VerifyOTP)
+	routes.POST("/resend-otp", svc.ResendOTP)
 	routes.POST("/logout", svc.Logout)
 
 	return svc
@@ -56,4 +57,8 @@ func (svc *ServiceClient) VerifyOTP(ctx *gin.Context) {
 
 func (svc *ServiceClient) Logout(ctx *gin.Context) {
 	services.Logout(ctx, svc.Client)
+}
+
+func (svc *ServiceClient) ResendOTP(ctx *gin.Context) {
+	services.ResendOTP(ctx, svc.Client)
 }

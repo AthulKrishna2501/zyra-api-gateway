@@ -28,7 +28,6 @@ func Register(ctx *gin.Context, c pb.AuthServiceClient) {
 		Password: body.Password,
 		Role:     body.Role,
 	}
-
 	res, err := c.Register(ctx, grpcReq)
 
 	if err != nil {
@@ -70,8 +69,6 @@ func Login(ctx *gin.Context, c pb.AuthServiceClient) {
 
 }
 
-
-
 func VerifyOTP(ctx *gin.Context, c pb.AuthServiceClient) {
 	body := models.VerifyOTPBody{}
 	if err := ctx.BindJSON(&body); err != nil {
@@ -93,12 +90,40 @@ func VerifyOTP(ctx *gin.Context, c pb.AuthServiceClient) {
 
 	res, err := c.Verify(ctx, &grpcReq)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest,gin.H{"message":err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
 	ctx.JSON(int(res.Status), &res)
 
+}
+
+func ResendOTP(ctx *gin.Context, c pb.AuthServiceClient) {
+	body := models.OTPRequestBody{}
+	if err := ctx.BindJSON(&body); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Fields cannot be empty"})
+		return
+	}
+
+	err := validator.ValidateOTP(body)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	grpcReq := pb.ResendOTPRequest{
+		Email: body.Email,
+		Role:  body.Role,
+	}
+
+	
+	res, err := c.ResendOTP(ctx, &grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(int(res.Status), &res)
 }
 
 func Logout(ctx *gin.Context, c pb.AuthServiceClient) {
