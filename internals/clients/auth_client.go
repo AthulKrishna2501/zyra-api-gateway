@@ -35,6 +35,7 @@ func RegisterAuthRoutes(eng *gin.Engine, cfg *config.Config) *ServiceClient {
 
 	routes := eng.Group("/auth")
 	routes.POST("/register", svc.Register)
+	routes.POST("/send-otp", svc.SendOTP)
 	routes.POST("/login", svc.Login)
 	routes.POST("/verify-otp", svc.VerifyOTP)
 	routes.POST("/resend-otp", svc.ResendOTP)
@@ -47,18 +48,22 @@ func (svc *ServiceClient) Register(ctx *gin.Context) {
 	services.Register(ctx, svc.Client)
 }
 
-func (svc *ServiceClient) Login(ctx *gin.Context) {
-	services.Login(ctx, svc.Client)
+func (svc *ServiceClient) SendOTP(ctx *gin.Context) {
+	services.SendOTP(ctx, svc.Client)
 }
 
 func (svc *ServiceClient) VerifyOTP(ctx *gin.Context) {
 	services.VerifyOTP(ctx, svc.Client)
 }
 
-func (svc *ServiceClient) Logout(ctx *gin.Context) {
-	services.Logout(ctx, svc.Client)
-}
-
 func (svc *ServiceClient) ResendOTP(ctx *gin.Context) {
 	services.ResendOTP(ctx, svc.Client)
+}
+
+func (svc *ServiceClient) Login(ctx *gin.Context) {
+	services.Login(ctx, svc.Client)
+}
+
+func (svc *ServiceClient) Logout(ctx *gin.Context) {
+	services.Logout(ctx, svc.Client)
 }

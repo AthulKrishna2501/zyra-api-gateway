@@ -2,6 +2,7 @@ package validator
 
 import (
 	"errors"
+	"regexp"
 
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/constants"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/models"
@@ -12,12 +13,20 @@ func ValidateSignup(req models.RegisterRequestBody) error {
 		return errors.New("name is required")
 	}
 
+	if !regexp.MustCompile(`[a-zA-Z]`).MatchString(req.Name) {
+		return errors.New("name must contain at least one alphabetic character")
+	}
+
 	if !constants.EmailRegex.MatchString(req.Email) {
 		return errors.New("invalid email format")
 	}
 
 	if len(req.Password) < constants.PasswordMinLength {
 		return errors.New("password must be at least 8 characters long")
+	}
+
+	if req.Role != "vendor" && req.Role != "client" {
+		return errors.New("invalid role")
 	}
 
 	return nil

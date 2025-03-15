@@ -7,6 +7,8 @@ import (
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/models"
 	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/validator"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func Register(ctx *gin.Context, c pb.AuthServiceClient) {
@@ -31,7 +33,7 @@ func Register(ctx *gin.Context, c pb.AuthServiceClient) {
 	res, err := c.Register(ctx, grpcReq)
 
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -39,34 +41,42 @@ func Register(ctx *gin.Context, c pb.AuthServiceClient) {
 
 }
 
-func Login(ctx *gin.Context, c pb.AuthServiceClient) {
-	body := models.LoginRequestBody{}
-
+func SendOTP(ctx *gin.Context, c pb.AuthServiceClient) {
+	body := models.OTPRequestBody{}
 	if err := ctx.BindJSON(&body); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Fields cannot be empty"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Fields annot be empty"})
 		return
 	}
 
-	if err := validator.ValidateLogin(body); err != nil {
+	if err := validator.ValidateOTP(body); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	grpcReq := pb.LoginRequest{
-		Email:    body.Email,
-		Role:     body.Role,
-		Password: body.Password,
+	grpcReq := &pb.OTPRequest{
+		Email: body.Email,
+		Role:  body.Role,
 	}
 
-	res, err := c.Login(ctx, &grpcReq)
-
+	res, err := c.SendOTP(ctx, grpcReq)
 	if err != nil {
-		ctx.JSON(http.StatusForbidden, err.Error())
+		grpcErrCode := status.Code(err)
+		var httpStatus int
+		switch grpcErrCode {
+		case codes.Internal:
+			httpStatus = http.StatusInternalServerError
+		case codes.ResourceExhausted:
+			httpStatus = http.StatusTooManyRequests
+		default:
+			httpStatus = http.StatusBadRequest
+
+		}
+
+		ctx.JSON(httpStatus, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(int(res.Status), &res)
-
 }
 
 func VerifyOTP(ctx *gin.Context, c pb.AuthServiceClient) {
@@ -116,7 +126,6 @@ func ResendOTP(ctx *gin.Context, c pb.AuthServiceClient) {
 		Role:  body.Role,
 	}
 
-	
 	res, err := c.ResendOTP(ctx, &grpcReq)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -124,6 +133,36 @@ func ResendOTP(ctx *gin.Context, c pb.AuthServiceClient) {
 	}
 
 	ctx.JSON(int(res.Status), &res)
+}
+
+func Login(ctx *gin.Context, c pb.AuthServiceClient) {
+	body := models.LoginRequestBody{}
+
+	if err := ctx.BindJSON(&body); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Fields cannot be empty"})
+		return
+	}
+
+	if err := validator.ValidateLogin(body); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	grpcReq := pb.LoginRequest{
+		Email:    body.Email,
+		Role:     body.Role,
+		Password: body.Password,
+	}
+
+	res, err := c.Login(ctx, &grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, err.Error())
+		return
+	}
+
+	ctx.JSON(int(res.Status), &res)
+
 }
 
 func Logout(ctx *gin.Context, c pb.AuthServiceClient) {
