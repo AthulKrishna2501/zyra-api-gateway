@@ -62,13 +62,14 @@ func Login(ctx *gin.Context, c pb.AuthServiceClient) {
 	res, err := c.Login(ctx, &grpcReq)
 
 	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		ctx.JSON(http.StatusForbidden, err.Error())
 		return
 	}
 
 	ctx.JSON(int(res.Status), &res)
 
 }
+
 
 
 func VerifyOTP(ctx *gin.Context, c pb.AuthServiceClient) {
