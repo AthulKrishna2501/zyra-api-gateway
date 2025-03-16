@@ -23,3 +23,10 @@ type VerifyOTPBody struct {
 	OTP   string `json:"otp" binding:"required"`
 }
 
+type TokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type LogoutRequest struct {
+	AccessToken string `json:"access_token"`
+}

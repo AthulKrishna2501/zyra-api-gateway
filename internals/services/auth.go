@@ -2,6 +2,7 @@ package services
 
 import (
 	"net/http"
+	"strings"
 
 	pb "github.com/AthulKrishna2501/proto-repo/auth"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/models"
@@ -165,9 +166,47 @@ func Login(ctx *gin.Context, c pb.AuthServiceClient) {
 
 }
 
+func RefreshToken(ctx *gin.Context, c pb.AuthServiceClient) {
+	var body models.TokenRequest
+
+	if err := ctx.BindJSON(&body); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Fields cannot be empty"})
+		return
+	}
+
+	grpcReq := pb.RefreshTokenRequest{
+		RefreshToken: body.RefreshToken,
+	}
+
+	res, err := c.RefreshToken(ctx, &grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, &res)
+}
+
 func Logout(ctx *gin.Context, c pb.AuthServiceClient) {
-	grpcReq := pb.LogoutRequest{}
-	res, err := c.Logout(ctx, &grpcReq)
+	tokenString := ctx.GetHeader("Authorization")
+
+	if tokenString == "" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No token provided"})
+		return
+	}
+
+	tokenParts := strings.Split(tokenString, " ")
+	if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token format"})
+		return
+	}
+	token := tokenParts[1]
+
+	grpcReq := &pb.LogoutRequest{
+		AccessToken: token,
+	}
+	res, err := c.Logout(ctx, grpcReq)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
