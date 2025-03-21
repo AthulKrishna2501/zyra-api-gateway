@@ -33,7 +33,7 @@ func RegisterAuthRoutes(eng *gin.Engine, cfg *config.Config) *ServiceClient {
 		log.Fatal("Auth Service Client is nil!")
 	}
 
-
+	// Authentication
 	routes := eng.Group("/auth")
 	routes.POST("/register", svc.Register)
 	routes.POST("/send-otp", svc.SendOTP)
@@ -43,7 +43,6 @@ func RegisterAuthRoutes(eng *gin.Engine, cfg *config.Config) *ServiceClient {
 	routes.GET("/refresh-token", svc.RefreshToken)
 	routes.POST("/logout", svc.Logout)
 
-	
 
 	return svc
 }

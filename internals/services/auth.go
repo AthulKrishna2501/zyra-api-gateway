@@ -23,7 +23,7 @@ func Register(ctx *gin.Context, c pb.AuthServiceClient) {
 	if err := validator.ValidateSignup(body); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
-	}
+	}	
 
 	grpcReq := &pb.RegisterRequest{
 		Name:     body.Name,

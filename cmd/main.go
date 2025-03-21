@@ -9,19 +9,20 @@ import (
 )
 
 func main() {
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadConfig()	
+	config.InitRedis()
 
 	if err != nil {
 		log.Fatal("Failed to config .env", err, cfg)
 	}
 
+	log.Print("Configurations loaded succesfully....")
+
 	router := gin.Default()
 
-	auth:=clients.RegisterAuthRoutes(router,&cfg)
-
-	log.Print(auth.Client)
-
-
+	clients.RegisterAuthRoutes(router, &cfg)
+	clients.RegisterVendorRoutes(router, &cfg)
+	clients.RegisterAdminRoutes(router, &cfg)
 
 	log.Print("Server start running on port:3000")
 	router.Run(":3000")
