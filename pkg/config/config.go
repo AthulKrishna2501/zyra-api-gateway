@@ -7,13 +7,14 @@ import (
 )
 
 type Config struct {
-	Port                string `mapstructure:"PORT"`
-	AUTH_SVC_URL        string `mapstructure:"AUTH_SVC_URL"`
-	CLIENT_SVC_URL      string `mapstructure:"CLIENT_SVC_URL"`
-	ADMIN_SVC_URL       string `mapstructure:"ADMIN_SVC_URL"`
-	VENDOR_SVC_URL      string `mapstructure:"VENDOR_SVC_URL"`
-	MESSAGE_SERVICE_URL string `mapstructure:"MESSAGE_SVC_URL"`
-	CHAT_SERVICE_URL    string `mapstructure:"CHAT_SVC_URL"`
+	Port                  string `mapstructure:"PORT"`
+	AUTH_SVC_URL          string `mapstructure:"AUTH_SVC_URL"`
+	CLIENT_SVC_URL        string `mapstructure:"CLIENT_SVC_URL"`
+	ADMIN_SVC_URL         string `mapstructure:"ADMIN_SVC_URL"`
+	VENDOR_SVC_URL        string `mapstructure:"VENDOR_SVC_URL"`
+	CHAT_SERVICE_URL      string `mapstructure:"CHAT_SVC_URL"`
+	STRIPE_SECRET_KEY     string `mapstructure:"STRIPE_SECRET_KEY"`
+	STRIPE_WEBHOOK_SECRET string `mapstructure:"STRIPE_WEBHOOK_SECRET"`
 }
 
 func LoadConfig() (cfg Config, err error) {

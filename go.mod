@@ -3,13 +3,14 @@ module github.com/AthulKrishna2501/zyra-api-gateway
 go 1.24.1
 
 require (
-	github.com/AthulKrishna2501/proto-repo v0.0.0-20250317182720-eec8d7cb4734
+	github.com/AthulKrishna2501/proto-repo v0.0.0-20250324070204-c916630d452e
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/v9 v9.7.1
 	github.com/spf13/viper v1.19.0
+	github.com/stripe/stripe-go v70.15.0+incompatible
 	google.golang.org/grpc v1.71.0
 )
 

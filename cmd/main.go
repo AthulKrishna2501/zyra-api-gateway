@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	cfg, err := config.LoadConfig()	
+	cfg, err := config.LoadConfig()
 	config.InitRedis()
 
 	if err != nil {
@@ -23,6 +23,7 @@ func main() {
 	clients.RegisterAuthRoutes(router, &cfg)
 	clients.RegisterVendorRoutes(router, &cfg)
 	clients.RegisterAdminRoutes(router, &cfg)
+	clients.RegisterClientClient(router, &cfg)
 
 	log.Print("Server start running on port:3000")
 	router.Run(":3000")

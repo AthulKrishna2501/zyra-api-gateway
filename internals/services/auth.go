@@ -1,6 +1,7 @@
 package services
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -23,7 +24,7 @@ func Register(ctx *gin.Context, c pb.AuthServiceClient) {
 	if err := validator.ValidateSignup(body); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
-	}	
+	}
 
 	grpcReq := &pb.RegisterRequest{
 		Name:     body.Name,
@@ -164,6 +165,41 @@ func Login(ctx *gin.Context, c pb.AuthServiceClient) {
 
 	ctx.JSON(int(res.Status), &res)
 
+}
+
+func GoogleLogin(ctx *gin.Context, c pb.AuthServiceClient) {
+	grpcReq := pb.GoogleLoginRequest{}
+
+	res, err := c.GoogleLogin(ctx, &grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, err.Error())
+		return
+	}
+
+	ctx.Redirect(http.StatusTemporaryRedirect, res.Url)
+
+	ctx.JSON(int(res.Status), &res)
+}
+
+func HandleGoogleCallback(ctx *gin.Context, c pb.AuthServiceClient) {
+
+	code := ctx.Request.URL.Query().Get("code")
+
+	log.Print("Code from Request URL :", code)
+
+	grpcReq := pb.GoogleCallbackRequest{
+		Code: code,
+	}
+
+	res, err := c.HandleGoogleCallback(ctx.Request.Context(), &grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, &res)
 }
 
 func RefreshToken(ctx *gin.Context, c pb.AuthServiceClient) {
