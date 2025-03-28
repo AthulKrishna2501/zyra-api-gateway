@@ -35,7 +35,7 @@ func ApproveRejectCategory(ctx *gin.Context, c pb.AdminServiceClient) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func 	BlockUser(ctx *gin.Context, c pb.AdminServiceClient) {
+func BlockUser(ctx *gin.Context, c pb.AdminServiceClient) {
 	var body struct {
 		UserID string `json:"user_id"`
 	}
@@ -81,6 +81,19 @@ func ListUsers(ctx *gin.Context, c pb.AdminServiceClient) {
 	grpcReq := &pb.ListUsersRequest{}
 
 	res, err := c.ListUsers(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func ViewRequests(ctx *gin.Context, c pb.AdminServiceClient) {
+	grpcReq := &pb.ViewRequestsReq{}
+
+	res, err := c.ViewRequests(ctx, grpcReq)
+
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

@@ -3,7 +3,7 @@ module github.com/AthulKrishna2501/zyra-api-gateway
 go 1.24.1
 
 require (
-	github.com/AthulKrishna2501/proto-repo v0.0.0-20250324070204-c916630d452e
+	github.com/AthulKrishna2501/proto-repo v0.0.0-20250328034733-81c84f935b77
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0

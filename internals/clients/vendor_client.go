@@ -43,6 +43,11 @@ func RegisterVendorRoutes(eng *gin.Engine, cfg *config.Config) *VendorClient {
 	routes.Use(middleware.VendorAuthMiddleware(config.RedisClient))
 	routes.POST("/request-category", vc.RequestCategory)
 	routes.GET("/list-categories", vc.ListCategory)
+	routes.GET("/me", vc.VendorProfile)
+	routes.PUT("/me", vc.UpdateProfile)
+	routes.POST("/service", vc.CreateService)
+	routes.PUT("/service", vc.UpdateService)
+	routes.PATCH("/reset", vc.ResetPassword)
 
 	return vc
 }
@@ -53,4 +58,24 @@ func (vc *VendorClient) RequestCategory(ctx *gin.Context) {
 
 func (vc *VendorClient) ListCategory(ctx *gin.Context) {
 	services.ListCategory(ctx, vc.Client)
+}
+
+func (vc *VendorClient) VendorProfile(ctx *gin.Context) {
+	services.VendorProfile(ctx, vc.Client)
+}
+
+func (vc *VendorClient) UpdateProfile(ctx *gin.Context) {
+	services.UpdateProfile(ctx, vc.Client)
+}
+
+func (vc *VendorClient) CreateService(ctx *gin.Context) {
+	services.CreateService(ctx, vc.Client)
+}
+
+func (vc *VendorClient) UpdateService(ctx *gin.Context) {
+	services.UpdateService(ctx, vc.Client)
+}
+
+func (vc *VendorClient) ResetPassword(ctx *gin.Context) {
+	services.ChangePassword(ctx, vc.Client)
 }

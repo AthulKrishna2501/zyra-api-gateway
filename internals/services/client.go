@@ -84,12 +84,12 @@ func HandleStripeWebhook(ctx *gin.Context, c pb.ClientServiceClient, cfg config.
 
 	event, err := webhook.ConstructEvent(body, signatureHeader, endpointSecret)
 	if err != nil {
-		fmt.Println("❌ Webhook verification failed:", err)
+		fmt.Println("Webhook verification failed:", err)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Webhook signature verification failed"})
 		return
 	}
 
-	fmt.Println("✅ Received event:", event.Type)
+	fmt.Println("Received event:", event.Type)
 
 	_, err = c.HandleStripeEvent(context.Background(), &pb.StripeWebhookRequest{
 		EventType: event.Type,

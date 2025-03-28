@@ -43,6 +43,7 @@ func RegisterAdminRoutes(eng *gin.Engine, cfg *config.Config) *AdminClient {
 	routes.PUT("/block-user", ac.BlockUser)
 	routes.PUT("/unblock-user", ac.UnblockUser)
 	routes.GET("/users", ac.ListUsers)
+	routes.GET("/view-requests", ac.ViewRequests)
 
 	return ac
 }
@@ -61,4 +62,8 @@ func (ac *AdminClient) UnblockUser(ctx *gin.Context) {
 
 func (ac *AdminClient) ListUsers(ctx *gin.Context) {
 	services.ListUsers(ctx, ac.Client)
+}
+
+func (ac *AdminClient) ViewRequests(ctx *gin.Context) {
+	services.ViewRequests(ctx, ac.Client)
 }
