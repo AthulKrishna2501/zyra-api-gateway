@@ -227,3 +227,44 @@ func ChangePassword(ctx *gin.Context, c pb.VendorSeviceClient) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": res.Message})
 }
+
+func VendorDashBoard(ctx *gin.Context, c pb.VendorSeviceClient) {
+	vendorID, ok := utils.GetVendorID(ctx)
+	if !ok {
+		return
+	}
+
+	grpReq := &pb.GetVendorDashboardRequest{
+		VendorId: vendorID.String(),
+	}
+
+	res, err := c.GetVendorDashboard(ctx, grpReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": res})
+}
+
+func GetServices(ctx *gin.Context, c pb.VendorSeviceClient) {
+	vendorID, ok := utils.GetVendorID(ctx)
+	if !ok {
+		return
+	}
+
+	grpReq := &pb.GetVendorServicesRequest{
+		VendorId: vendorID.String(),
+	}
+
+	res, err := c.GetVendorServices(ctx, grpReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": res})
+
+}

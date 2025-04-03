@@ -2,12 +2,15 @@ package clients
 
 import (
 	"log"
+	"time"
 
 	pb "github.com/AthulKrishna2501/proto-repo/client"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/middleware"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/services"
 	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/config"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/sony/gobreaker"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -15,6 +18,19 @@ import (
 type ClientClient struct {
 	Client pb.ClientServiceClient
 	Cfg    config.Config
+	CB     *gobreaker.CircuitBreaker
+}
+
+func newCircuitBreaker() *gobreaker.CircuitBreaker {
+	return gobreaker.NewCircuitBreaker(gobreaker.Settings{
+		Name:        "ClientServiceCB",
+		MaxRequests: 5,
+		Interval:    10 * time.Second,
+		Timeout:     5 * time.Second,
+		ReadyToTrip: func(counts gobreaker.Counts) bool {
+			return counts.ConsecutiveFailures > 3
+		},
+	})
 }
 
 func InitClientClient(c *config.Config) *ClientClient {
@@ -29,6 +45,7 @@ func InitClientClient(c *config.Config) *ClientClient {
 
 	return &ClientClient{
 		Client: pb.NewClientServiceClient(conn),
+		CB:     newCircuitBreaker(),
 	}
 
 }
@@ -40,18 +57,63 @@ func RegisterClientClient(eng *gin.Engine, cfg *config.Config) *ClientClient {
 		log.Fatal("Client Service Client is nil")
 	}
 
+	eng.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"http://localhost:3005"},
+		AllowMethods: []string{"GET", "POST"},
+		AllowHeaders: []string{"Origin", "Content-Type"},
+	}))
+
 	routes := eng.Group("/client")
 	routes.Use(middleware.ClientAuthMiddleware(config.RedisClient))
 	routes.POST("/mc/payment", cc.PayMasterOfCeremony)
 	routes.POST("/webhook", cc.HandleStripeWebhook)
+	routes.GET("/verify-payment", cc.VerifyPayment)
 
 	return cc
 }
 
 func (cc *ClientClient) PayMasterOfCeremony(ctx *gin.Context) {
-	services.PayMasterOfCeremony(ctx, cc.Client)
+	state := cc.CB.State().String()
+	log.Println("Circuit Breaker State (Before Call):", state)
+
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		err := services.PayMasterOfCeremony(ctx, cc.Client)
+		if err != nil {
+			log.Println("Circuit Breaker Error:", err)
+			return nil, err
+		}
+		return nil, nil
+	})
+
+	state = cc.CB.State().String()
+	log.Println("Circuit Breaker State (After Call):", state)
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Payment Service Unavailable"})
+		return
+	}
 }
 
 func (cc *ClientClient) HandleStripeWebhook(ctx *gin.Context) {
-	services.HandleStripeWebhook(ctx, cc.Client, cc.Cfg)
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.HandleStripeWebhook(ctx, cc.Client, cc.Cfg)
+		return nil, nil
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Payment Service Unavailable"})
+		return
+	}
+}
+
+func (cc *ClientClient) VerifyPayment(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.VerifyPayment(ctx, cc.Client)
+		return nil, nil
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Payment Service Unavailable"})
+		return
+	}
 }

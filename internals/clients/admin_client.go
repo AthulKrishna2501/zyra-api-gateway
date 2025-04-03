@@ -44,6 +44,9 @@ func RegisterAdminRoutes(eng *gin.Engine, cfg *config.Config) *AdminClient {
 	routes.PUT("/unblock-user", ac.UnblockUser)
 	routes.GET("/users", ac.ListUsers)
 	routes.GET("/view-requests", ac.ViewCategoryRequests)
+	routes.POST("/add-category", ac.AddCategory)
+	routes.GET("/dashboard", ac.AdminDashboard)
+	routes.GET("/wallet", ac.GetAdminWallet)
 
 	return ac
 }
@@ -66,4 +69,16 @@ func (ac *AdminClient) ListUsers(ctx *gin.Context) {
 
 func (ac *AdminClient) ViewCategoryRequests(ctx *gin.Context) {
 	services.ViewRequests(ctx, ac.Client)
+}
+
+func (ac *AdminClient) AddCategory(ctx *gin.Context) {
+	services.AddCategory(ctx, ac.Client)
+}
+
+func (ac *AdminClient) AdminDashboard(ctx *gin.Context) {
+	services.AdminDashboard(ctx, ac.Client)
+}
+
+func (ac *AdminClient) GetAdminWallet(ctx *gin.Context) {
+	services.GetAdminWallet(ctx, ac.Client)
 }

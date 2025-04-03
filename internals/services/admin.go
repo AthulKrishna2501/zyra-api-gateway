@@ -101,3 +101,55 @@ func ViewRequests(ctx *gin.Context, c pb.AdminServiceClient) {
 
 	ctx.JSON(http.StatusOK, res)
 }
+
+func AddCategory(ctx *gin.Context, c pb.AdminServiceClient) {
+	var req models.AddCategoryRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Fields cannot be empty"})
+		return
+	}
+
+	grpcReq := &pb.AddCategoryRequest{
+		CategoryName: req.CategoryName,
+	}
+
+	res, err := c.AddCategory(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+
+}
+
+func AdminDashboard(ctx *gin.Context, c pb.AdminServiceClient) {
+	grpcReq := &pb.AdminDashBoardRequest{}
+
+	res, err := c.AdminDashBoard(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func GetAdminWallet(ctx *gin.Context, c pb.AdminServiceClient) {
+	const adminEmail = "admin@example.com"
+	grpReq := &pb.ViewAdminWalletRequest{
+		Email: adminEmail,
+	}
+
+	res, err := c.ViewAdminWallet(ctx, grpReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+
+}
