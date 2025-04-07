@@ -15,6 +15,7 @@ type Config struct {
 	CHAT_SERVICE_URL      string `mapstructure:"CHAT_SVC_URL"`
 	STRIPE_SECRET_KEY     string `mapstructure:"STRIPE_SECRET_KEY"`
 	STRIPE_WEBHOOK_SECRET string `mapstructure:"STRIPE_WEBHOOK_SECRET"`
+	ADMIN_EMAIL           string `mapstructure:"ADMIN_EMAIL"`
 }
 
 func LoadConfig() (cfg Config, err error) {

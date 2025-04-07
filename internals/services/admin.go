@@ -6,6 +6,7 @@ import (
 
 	pb "github.com/AthulKrishna2501/proto-repo/admin"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/models"
+	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -137,8 +138,8 @@ func AdminDashboard(ctx *gin.Context, c pb.AdminServiceClient) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func GetAdminWallet(ctx *gin.Context, c pb.AdminServiceClient) {
-	const adminEmail = "admin@example.com"
+func GetAdminWallet(ctx *gin.Context, c pb.AdminServiceClient, cfg config.Config) {
+	var adminEmail = cfg.ADMIN_EMAIL
 	grpReq := &pb.ViewAdminWalletRequest{
 		Email: adminEmail,
 	}
@@ -151,5 +152,31 @@ func GetAdminWallet(ctx *gin.Context, c pb.AdminServiceClient) {
 	}
 
 	ctx.JSON(http.StatusOK, res)
+
+}
+
+func ViewAdminWalletCategory(ctx *gin.Context, c pb.AdminServiceClient) {
+	grpcReq := &pb.ListCategoryRequest{}
+
+	res, err := c.ListCategory(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, &res)
+
+}
+
+func ViewCategory(ctx *gin.Context, c pb.AdminServiceClient) {
+	grpcReq := &pb.ListCategoryRequest{}
+
+	res, err := c.ListCategory(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, &res)
 
 }

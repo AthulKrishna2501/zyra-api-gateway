@@ -7,7 +7,7 @@ import (
 )
 
 type RequestCategoryRequest struct {
-	CategoryId string `json:"category_id"`
+	CategoryName string `json:"category_name"`
 }
 
 type UpdateVendorProfileRequest struct {

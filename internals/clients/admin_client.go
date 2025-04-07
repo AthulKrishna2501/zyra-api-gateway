@@ -14,6 +14,7 @@ import (
 
 type AdminClient struct {
 	Client pb.AdminServiceClient
+	Cfg    config.Config
 }
 
 func InitAdminClient(c *config.Config) *AdminClient {
@@ -28,6 +29,7 @@ func InitAdminClient(c *config.Config) *AdminClient {
 
 	return &AdminClient{
 		Client: pb.NewAdminServiceClient(conn),
+		Cfg:    *c,
 	}
 }
 
@@ -44,6 +46,7 @@ func RegisterAdminRoutes(eng *gin.Engine, cfg *config.Config) *AdminClient {
 	routes.PUT("/unblock-user", ac.UnblockUser)
 	routes.GET("/users", ac.ListUsers)
 	routes.GET("/view-requests", ac.ViewCategoryRequests)
+	routes.GET("/list-category", ac.ListCategory)
 	routes.POST("/add-category", ac.AddCategory)
 	routes.GET("/dashboard", ac.AdminDashboard)
 	routes.GET("/wallet", ac.GetAdminWallet)
@@ -80,5 +83,9 @@ func (ac *AdminClient) AdminDashboard(ctx *gin.Context) {
 }
 
 func (ac *AdminClient) GetAdminWallet(ctx *gin.Context) {
-	services.GetAdminWallet(ctx, ac.Client)
+	services.GetAdminWallet(ctx, ac.Client, ac.Cfg)
+}
+
+func (ac *AdminClient) ListCategory(ctx *gin.Context) {
+	services.ViewCategory(ctx, ac.Client)
 }

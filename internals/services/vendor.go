@@ -38,8 +38,8 @@ func RequestCategory(ctx *gin.Context, c pb.VendorSeviceClient) {
 	}
 
 	grpcReq := &pb.RequestCategoryRequest{
-		VendorId:   parsedVendorID.String(),
-		CategoryId: body.CategoryId,
+		VendorId:     parsedVendorID.String(),
+		CategoryName: body.CategoryName,
 	}
 
 	res, err := c.RequestCategory(ctx, grpcReq)
