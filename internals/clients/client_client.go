@@ -68,6 +68,8 @@ func RegisterClientClient(eng *gin.Engine, cfg *config.Config) *ClientClient {
 	routes.POST("/mc/payment", cc.PayMasterOfCeremony)
 	routes.POST("/webhook", cc.HandleStripeWebhook)
 	routes.GET("/verify-payment", cc.VerifyPayment)
+	routes.POST("/host-event", cc.HostEvent)
+	routes.PUT("/edit-event", cc.EditEvent)
 
 	return cc
 }
@@ -115,5 +117,32 @@ func (cc *ClientClient) VerifyPayment(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(503, gin.H{"error": "Payment Service Unavailable"})
 		return
+	}
+}
+
+func (cc *ClientClient) HostEvent(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.HostEvent(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+	}
+}
+
+func (cc *ClientClient) EditEvent(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.EditEvent(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
 	}
 }

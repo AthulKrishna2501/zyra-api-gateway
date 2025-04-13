@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	pb "github.com/AthulKrishna2501/proto-repo/client"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/models"
@@ -16,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/webhook"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func PayMasterOfCeremony(ctx *gin.Context, c pb.ClientServiceClient) error {
@@ -140,4 +142,147 @@ func VerifyPayment(ctx *gin.Context, c pb.ClientServiceClient) {
 			"message": res.Message,
 		})
 	}
+}
+
+func HostEvent(ctx *gin.Context, c pb.ClientServiceClient) {
+	var req models.CreateEventRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Request"})
+		return
+	}
+
+	clientID, exists := ctx.Get("user_ids")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	eventDate, err := time.Parse("2006-01-02", req.Date)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event date"})
+		return
+	}
+
+	startTime, err := time.Parse("15:04", req.EventDetails.StartTime)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start time"})
+		return
+	}
+
+	endTime, err := time.Parse("15:04", req.EventDetails.EndTime)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end time"})
+		return
+	}
+
+	eventID := uuid.New()
+	grpcReq := &pb.CreateEventRequest{
+		EventId:  eventID.String(),
+		Title:    req.Title,
+		Date:     timestamppb.New(eventDate),
+		HostedBy: clientIDStr,
+		Location: &pb.Location{
+			Address:   req.Location.Address,
+			City:      req.Location.City,
+			Country:   req.Location.Country,
+			Latitude:  req.Location.Lat,
+			Longitude: req.Location.Lng,
+		},
+
+		EventDetails: &pb.EventDetails{
+			EventId:        eventID.String(),
+			Description:    req.EventDetails.Description,
+			StartTime:      timestamppb.New(startTime),
+			EndTime:        timestamppb.New(endTime),
+			PosterImage:    req.EventDetails.PosterImage,
+			PricePerTicket: int32(req.EventDetails.PricePerTicket),
+			TicketLimit:    int32(req.EventDetails.TicketLimit),
+		},
+	}
+
+	log.Printf("ClientID in API Gateway %s:", grpcReq.HostedBy)
+	res, err := c.CreateEvent(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+
+}
+
+func EditEvent(ctx *gin.Context, c pb.ClientServiceClient) {
+	var req models.EditEventRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Request"})
+		return
+	}
+
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	eventDate, err := time.Parse("2006-01-02", req.Date)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event date"})
+		return
+	}
+
+	startTime, err := time.Parse("15:04", req.EventDetails.StartTime)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start time"})
+		return
+	}
+
+	endTime, err := time.Parse("15:04", req.EventDetails.EndTime)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end time"})
+		return
+	}
+
+	grpcReq := &pb.EditEventRequest{
+		EventId:  req.EventId,
+		Title:    req.Title,
+		Date:     timestamppb.New(eventDate),
+		HostedBy: clientIDStr,
+		Location: &pb.Location{
+			Address:   req.Location.Address,
+			City:      req.Location.City,
+			Country:   req.Location.Country,
+			Latitude:  req.Location.Lat,
+			Longitude: req.Location.Lng,
+		},
+
+		EventDetails: &pb.EventDetails{
+			EventId:        req.EventId,
+			Description:    req.EventDetails.Description,
+			StartTime:      timestamppb.New(startTime),
+			EndTime:        timestamppb.New(endTime),
+			PosterImage:    req.EventDetails.PosterImage,
+			PricePerTicket: int32(req.EventDetails.PricePerTicket),
+			TicketLimit:    int32(req.EventDetails.TicketLimit),
+		},
+	}
+
+	res, err := c.EditEvent(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
 }
