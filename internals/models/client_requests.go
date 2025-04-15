@@ -38,3 +38,11 @@ type EditEventRequest struct {
 		TicketLimit    int    `json:"ticket_limit"`
 	} `json:"event_details"`
 }
+
+type EditClientProfileRequest struct {
+	FirstName    string `json:"first_name" binding:"required"`
+	LastName     string `json:"last_name" binding:"required"`
+	Place        string `json:"place" binding:"required"`
+	ProfileImage string `json:"profile_image" binding:"required"`
+	PhoneNumber  string `json:"phone_number" binding:"required"`
+}

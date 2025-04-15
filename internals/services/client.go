@@ -13,6 +13,7 @@ import (
 	pb "github.com/AthulKrishna2501/proto-repo/client"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/models"
 	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/config"
+	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/validator"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go"
@@ -206,7 +207,6 @@ func HostEvent(ctx *gin.Context, c pb.ClientServiceClient) {
 		},
 	}
 
-	log.Printf("ClientID in API Gateway %s:", grpcReq.HostedBy)
 	res, err := c.CreateEvent(ctx, grpcReq)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -285,4 +285,86 @@ func EditEvent(ctx *gin.Context, c pb.ClientServiceClient) {
 	}
 
 	ctx.JSON(http.StatusOK, res)
+}
+
+func GetClientProfile(ctx *gin.Context, c pb.ClientServiceClient) {
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	grpcReq := &pb.GetClientProfileRequest{
+		ClientId: clientIDStr,
+	}
+
+	res, err := c.GetClientProfile(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to fetch client profile", "details": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"clientId":     res.ClientId,
+			"firstName":    res.FirstName,
+			"lastName":     res.LastName,
+			"place":        res.Place,
+			"email":        res.Email,
+			"profileImage": res.ProfileImage,
+			"phoneNumber":  res.PhoneNumber,
+		},
+	})
+}
+
+func EditClientProfile(ctx *gin.Context, c pb.ClientServiceClient) {
+	var req models.EditClientProfileRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	if !validator.ValidatePhone(req.PhoneNumber) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "phone number should be 10 digits"})
+		return
+	}
+
+	grpcReq := &pb.EditClientProfileRequest{
+		ClientId:     clientIDStr,
+		FirstName:    req.FirstName,
+		LastName:     req.LastName,
+		ProfileImage: req.ProfileImage,
+		PhoneNumber:  req.PhoneNumber,
+	}
+
+	res, err := c.EditClientProfile(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to edit client profile", "details": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": res.Message,
+	})
 }

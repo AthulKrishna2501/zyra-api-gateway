@@ -70,6 +70,8 @@ func RegisterClientClient(eng *gin.Engine, cfg *config.Config) *ClientClient {
 	routes.GET("/verify-payment", cc.VerifyPayment)
 	routes.POST("/host-event", cc.HostEvent)
 	routes.PUT("/edit-event", cc.EditEvent)
+	routes.GET("/profile", cc.ClientProfile)
+	routes.PUT("/profile", cc.EditClientProfile)
 
 	return cc
 }
@@ -136,6 +138,34 @@ func (cc *ClientClient) HostEvent(ctx *gin.Context) {
 func (cc *ClientClient) EditEvent(ctx *gin.Context) {
 	_, err := cc.CB.Execute(func() (interface{}, error) {
 		services.EditEvent(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) ClientProfile(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.GetClientProfile(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) EditClientProfile(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.EditClientProfile(ctx, cc.Client)
 		return nil, nil
 
 	})

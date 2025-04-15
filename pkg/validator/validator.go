@@ -67,3 +67,7 @@ func ValidateVerifyOTP(req models.VerifyOTPBody) error {
 
 	return nil
 }
+
+func ValidatePhone(number string) bool {
+	return len(number) == 10
+}
