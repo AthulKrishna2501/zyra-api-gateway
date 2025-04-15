@@ -11,6 +11,7 @@ import (
 	"time"
 
 	pb "github.com/AthulKrishna2501/proto-repo/client"
+	"github.com/AthulKrishna2501/zyra-api-gateway/internals/constants"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/models"
 	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/config"
 	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/validator"
@@ -316,7 +317,6 @@ func GetClientProfile(ctx *gin.Context, c pb.ClientServiceClient) {
 			"clientId":     res.ClientId,
 			"firstName":    res.FirstName,
 			"lastName":     res.LastName,
-			"place":        res.Place,
 			"email":        res.Email,
 			"profileImage": res.ProfileImage,
 			"phoneNumber":  res.PhoneNumber,
@@ -365,6 +365,54 @@ func EditClientProfile(ctx *gin.Context, c pb.ClientServiceClient) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
+		"message": res.Message,
+	})
+}
+
+func ResetPassword(ctx *gin.Context, c pb.ClientServiceClient) {
+	var req models.ResetPasswordRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	if len(req.NewPassword) < constants.PasswordMinLength {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "password must be at least 8 characters long"})
+		return
+	}
+
+	if req.NewPassword != req.ConfirmPassword {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Password and confirm password do not match"})
+		return
+	}
+
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	grpcReq := &pb.ResetPasswordRequest{
+		ClientId:        clientIDStr,
+		CurrentPassword: req.CurrentPassword,
+		NewPassword:     req.NewPassword,
+		ConfirmPassword: req.ConfirmPassword,
+	}
+
+	res, err := c.ResetPassword(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to reset password", "details": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
 		"message": res.Message,
 	})
 }

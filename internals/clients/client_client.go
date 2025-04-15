@@ -72,6 +72,7 @@ func RegisterClientClient(eng *gin.Engine, cfg *config.Config) *ClientClient {
 	routes.PUT("/edit-event", cc.EditEvent)
 	routes.GET("/profile", cc.ClientProfile)
 	routes.PUT("/profile", cc.EditClientProfile)
+	routes.PUT("/reset-password", cc.ResetPassword)
 
 	return cc
 }
@@ -166,6 +167,20 @@ func (cc *ClientClient) ClientProfile(ctx *gin.Context) {
 func (cc *ClientClient) EditClientProfile(ctx *gin.Context) {
 	_, err := cc.CB.Execute(func() (interface{}, error) {
 		services.EditClientProfile(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) ResetPassword(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.ResetPassword(ctx, cc.Client)
 		return nil, nil
 
 	})

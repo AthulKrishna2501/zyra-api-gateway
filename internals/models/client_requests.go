@@ -46,3 +46,9 @@ type EditClientProfileRequest struct {
 	ProfileImage string `json:"profile_image" binding:"required"`
 	PhoneNumber  string `json:"phone_number" binding:"required"`
 }
+
+type ResetPasswordRequest struct {
+	CurrentPassword string `json:"current_password" binding:"required"`
+	NewPassword        string `json:"new_password" binding:"required"`
+	ConfirmPassword string `json:"confirm_password" binding:"required"`
+}
