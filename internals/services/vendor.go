@@ -268,3 +268,71 @@ func GetServices(ctx *gin.Context, c pb.VendorSeviceClient) {
 	ctx.JSON(http.StatusOK, gin.H{"message": res})
 
 }
+
+func GetBookingRequests(ctx *gin.Context, c pb.VendorSeviceClient) {
+	vendorID, ok := utils.GetVendorID(ctx)
+	if !ok {
+		return
+	}
+
+	grpcReq := &pb.GetBookingRequestsRequest{
+		VendorId: vendorID.String(),
+	}
+
+	res, err := c.GetBookingRequests(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to fetch booking requests", "detassils": err.Error()})
+		return
+	}
+
+	bookings := make([]gin.H, 0)
+	for _, booking := range res.Bookings {
+		bookings = append(bookings, gin.H{
+			"bookingId":  booking.BookingId,
+			"clientName": booking.ClientName,
+			"service":    booking.Service,
+			"date":       booking.Date.AsTime().Format("2006-01-02"),
+			"price":      booking.Price,
+			"status":     booking.Status,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    bookings,
+	})
+}
+
+func ApproveBooking(ctx *gin.Context, c pb.VendorSeviceClient) {
+	var req struct {
+		BookingID string `json:"booking_id" binding:"required"`
+		Status    string `json:"status" binding:"required"`
+	}
+
+	vendorID, ok := utils.GetVendorID(ctx)
+	if !ok {
+		return
+	}
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body", "details": err.Error()})
+		return
+	}
+
+	grpcReq := &pb.ApproveBookingRequest{
+		BookingId: req.BookingID,
+		VendorId:  vendorID.String(),
+		Status:    req.Status,
+	}
+
+	res, err := c.ApproveBooking(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to approve booking", "details": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": res.Message,
+	})
+}

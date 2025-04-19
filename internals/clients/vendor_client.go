@@ -50,6 +50,8 @@ func RegisterVendorRoutes(eng *gin.Engine, cfg *config.Config) *VendorClient {
 	routes.PUT("/service", vc.UpdateService)
 	routes.PATCH("/reset", vc.ResetPassword)
 	routes.GET("/dashboard", vc.VendorDashBoard)
+	routes.GET("/requests", vc.GetBookingRequests)
+	routes.POST("/approve-booking", vc.ApproveBooking)
 
 	return vc
 }
@@ -88,4 +90,12 @@ func (vc *VendorClient) VendorDashBoard(ctx *gin.Context) {
 
 func (vc *VendorClient) GetServices(ctx *gin.Context) {
 	services.GetServices(ctx, vc.Client)
+}
+
+func (vc *VendorClient) GetBookingRequests(ctx *gin.Context) {
+	services.GetBookingRequests(ctx, vc.Client)
+}
+
+func (vc *VendorClient) ApproveBooking(ctx *gin.Context) {
+	services.ApproveBooking(ctx, vc.Client)
 }
