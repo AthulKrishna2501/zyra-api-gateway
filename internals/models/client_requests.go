@@ -49,6 +49,12 @@ type EditClientProfileRequest struct {
 
 type ResetPasswordRequest struct {
 	CurrentPassword string `json:"current_password" binding:"required"`
-	NewPassword        string `json:"new_password" binding:"required"`
+	NewPassword     string `json:"new_password" binding:"required"`
 	ConfirmPassword string `json:"confirm_password" binding:"required"`
+}
+
+type BookVendorRequest struct {
+	VendorId string `json:"vendorId" binding:"required"`
+	Service  string `json:"service" binding:"required"`
+	Date     string `json:"date" binding:"required"`
 }

@@ -153,7 +153,7 @@ func HostEvent(ctx *gin.Context, c pb.ClientServiceClient) {
 		return
 	}
 
-	clientID, exists := ctx.Get("user_ids")
+	clientID, exists := ctx.Get("client_id")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Client ID not found in token"})
 		return
@@ -414,5 +414,292 @@ func ResetPassword(ctx *gin.Context, c pb.ClientServiceClient) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": res.Message,
+	})
+}
+
+func GetBookings(ctx *gin.Context, c pb.ClientServiceClient) {
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	grpcReq := &pb.GetBookingsRequest{
+		ClientId: clientIDStr,
+	}
+
+	res, err := c.GetBookings(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to fetch bookings", "details": err.Error()})
+		return
+	}
+
+	bookings := make([]gin.H, 0)
+	for _, booking := range res.Bookings {
+		bookings = append(bookings, gin.H{
+			"booking_id": booking.BookingId,
+			"vendor_details": gin.H{
+				"vendor_id": booking.Vendor.VendorId,
+				"name":      booking.Vendor.Name,
+				"image":     booking.Vendor.Image,
+			},
+			"service": booking.Service,
+			"date":    booking.Date.AsTime().Format("2006-01-02"),
+			"price":   booking.Price,
+			"status":  booking.Status,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, bookings)
+}
+
+func ClientDashboard(ctx *gin.Context, c pb.ClientServiceClient) {
+	grpcReq := &pb.LandingPageRequest{}
+
+	res, err := c.ClientDashboard(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to fetch dashboard data", "details": err.Error()})
+		return
+	}
+
+	categories := make([]gin.H, 0)
+	for _, category := range res.Data.Categories {
+		categories = append(categories, gin.H{
+			"categoryId": category.CategoryId,
+			"name":       category.CategoryName,
+		})
+	}
+
+	upcomingEvents := make([]gin.H, 0)
+	for _, event := range res.Data.UpcomingEvents {
+		upcomingEvents = append(upcomingEvents, gin.H{
+			"eventId":     event.EventId,
+			"title":       event.Title,
+			"date":        event.Date,
+			"location":    fmt.Sprintf("%s, %s, %s", event.Location.Address, event.Location.City, event.Location.Country),
+			"description": event.Description,
+			"image":       event.Image,
+		})
+	}
+
+	featuredVendors := make([]gin.H, 0)
+	for _, vendor := range res.Data.FeaturedVendors {
+		featuredVendors = append(featuredVendors, gin.H{
+			"vendorId": vendor.VendorId,
+			"name":     vendor.Name,
+			"category": vendor.Category,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": res.Success,
+		"data": gin.H{
+			"categories":      categories,
+			"upcomingEvents":  upcomingEvents,
+			"featuredVendors": featuredVendors,
+		},
+	})
+}
+
+func BookVendor(ctx *gin.Context, c pb.ClientServiceClient) {
+	var req models.BookVendorRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	bookingDate, err := time.Parse("2006-01-02", req.Date)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format. Use YYYY-MM-DD"})
+		return
+	}
+
+	grpcReq := &pb.BookVendorRequest{
+		ClientId: clientIDStr,
+		VendorId: req.VendorId,
+		Service:  req.Service,
+		Date:     timestamppb.New(bookingDate),
+	}
+
+	res, err := c.BookVendor(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to book vendor", "details": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": res.Message,
+	})
+}
+
+func GetVendorsByCategory(ctx *gin.Context, c pb.ClientServiceClient) {
+	category := ctx.Query("category")
+	if category == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Category is required"})
+		return
+	}
+
+	grpcReq := &pb.GetVendorsByCategoryRequest{
+		Category: category,
+	}
+
+	res, err := c.GetVendorsByCategory(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to fetch vendors", "details": err.Error()})
+		return
+	}
+
+	vendors := make([]gin.H, 0)
+	for _, vendor := range res.Vendors {
+		services := make([]gin.H, 0)
+		for _, service := range vendor.Services {
+			services = append(services, gin.H{
+				"serviceId":          service.ServiceId,
+				"serviceTitle":       service.ServiceTitle,
+				"serviceDescription": service.ServiceDescription,
+				"servicePrice":       service.ServicePrice,
+			})
+		}
+
+		vendors = append(vendors, gin.H{
+			"vendorId": vendor.VendorId,
+			"name":     vendor.Name,
+			"services": services,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    vendors,
+	})
+}
+
+func GetHostedEvents(ctx *gin.Context, c pb.ClientServiceClient) {
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	grpcReq := &pb.GetHostedEventsRequest{
+		ClientId: clientIDStr,
+	}
+
+	res, err := c.GetHostedEvents(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to fetch hosted events", "details": err.Error()})
+		return
+	}
+
+	events := make([]gin.H, 0)
+	for _, event := range res.Events {
+		events = append(events, gin.H{
+			"eventId": event.EventId,
+			"title":   event.Title,
+			"location": gin.H{
+				"address":   event.Location.Address,
+				"city":      event.Location.City,
+				"country":   event.Location.Country,
+				"latitude":  event.Location.Latitude,
+				"longitude": event.Location.Longitude,
+			},
+			"date":           event.Date.AsTime().Format("2006-01-02"),
+			"description":    event.Description,
+			"pricePerTicket": event.PricePerTicket,
+			"ticketsSold":    event.TicketsSold,
+			"ticketLimit":    event.TicketLimit,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    events,
+	})
+}
+
+func GetUpcomingEvents(ctx *gin.Context, c pb.ClientServiceClient) {
+	grpcReq := &pb.GetUpcomingEventsRequest{}
+
+	res, err := c.GetUpcomingEvents(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to fetch upcoming events", "details": err.Error()})
+		return
+	}
+
+	events := make([]gin.H, 0)
+	for _, event := range res.Events {
+		events = append(events, gin.H{
+			"eventId":     event.EventId,
+			"title":       event.Title,
+			"date":        event.Date.AsTime().Format("2006-01-02"),
+			"location":    event.Location,
+			"description": event.Description,
+			"posterImage": event.PosterImage,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"events": events,
+		},
+	})
+}
+
+func GetVendorProfile(ctx *gin.Context, c pb.ClientServiceClient) {
+	vendorID := ctx.Query("vendor_id")
+	if vendorID == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Vendor ID is required"})
+		return
+	}
+
+	grpcReq := &pb.GetVendorProfileRequest{
+		VendorId: vendorID,
+	}
+
+	res, err := c.GetVendorProfile(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to fetch vendor profile", "details": err.Error()})
+		return
+	}
+
+	vendorDetails := gin.H{
+		"vendorId":     res.VendorDetails.VendorId,
+		"firstName":    res.VendorDetails.FirstName,
+		"categories":   res.VendorDetails.Categories,
+		"profileImage": res.VendorDetails.ProfileImage,
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"vendorDetails": vendorDetails,
+		},
 	})
 }

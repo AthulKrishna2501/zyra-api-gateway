@@ -73,6 +73,13 @@ func RegisterClientClient(eng *gin.Engine, cfg *config.Config) *ClientClient {
 	routes.GET("/profile", cc.ClientProfile)
 	routes.PUT("/profile", cc.EditClientProfile)
 	routes.PUT("/reset-password", cc.ResetPassword)
+	routes.GET("/bookings", cc.GetBookings)
+	routes.GET("/dashboard", cc.ClientDashboard)
+	routes.POST("/booking", cc.BookVendor)
+	routes.GET("/vendors", cc.GetVendorsByCategory)
+	routes.GET("/hosted-events", cc.GetHostedEvents)
+	routes.GET("/upcoming-events", cc.GetUpcomingEvents)
+	routes.GET("/vendor-profile", cc.GetVendorProfile)
 
 	return cc
 }
@@ -181,6 +188,104 @@ func (cc *ClientClient) EditClientProfile(ctx *gin.Context) {
 func (cc *ClientClient) ResetPassword(ctx *gin.Context) {
 	_, err := cc.CB.Execute(func() (interface{}, error) {
 		services.ResetPassword(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) GetBookings(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.GetBookings(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) ClientDashboard(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.ClientDashboard(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) BookVendor(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.BookVendor(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) GetVendorsByCategory(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.GetVendorsByCategory(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) GetHostedEvents(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.GetHostedEvents(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) GetUpcomingEvents(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.GetUpcomingEvents(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) GetVendorProfile(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.GetVendorProfile(ctx, cc.Client)
 		return nil, nil
 
 	})
