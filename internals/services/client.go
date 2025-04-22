@@ -613,6 +613,12 @@ func GetUpcomingEvents(ctx *gin.Context, c pb.ClientServiceClient) {
 		})
 	}
 
+	if len(events) == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "There are no upcoming events scheduled at this time."})
+		return
+
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
