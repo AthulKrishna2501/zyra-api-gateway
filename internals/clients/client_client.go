@@ -17,7 +17,7 @@ import (
 
 type ClientClient struct {
 	Client pb.ClientServiceClient
-	Cfg    config.Config
+	Cfg    *config.Config
 	CB     *gobreaker.CircuitBreaker
 }
 
@@ -46,6 +46,7 @@ func InitClientClient(c *config.Config) *ClientClient {
 	return &ClientClient{
 		Client: pb.NewClientServiceClient(conn),
 		CB:     newCircuitBreaker(),
+		Cfg:    c,
 	}
 
 }
@@ -66,8 +67,6 @@ func RegisterClientClient(eng *gin.Engine, cfg *config.Config) *ClientClient {
 	routes := eng.Group("/client")
 	routes.Use(middleware.ClientAuthMiddleware(config.RedisClient))
 	routes.POST("/mc/payment", cc.PayMasterOfCeremony)
-	routes.POST("/webhook", cc.HandleStripeWebhook)
-	routes.GET("/verify-payment", cc.VerifyPayment)
 	routes.POST("/host-event", cc.HostEvent)
 	routes.PUT("/edit-event", cc.EditEvent)
 	routes.GET("/profile", cc.ClientProfile)
@@ -81,6 +80,8 @@ func RegisterClientClient(eng *gin.Engine, cfg *config.Config) *ClientClient {
 	routes.GET("/upcoming-events", cc.GetUpcomingEvents)
 	routes.GET("/vendor-profile", cc.GetVendorProfile)
 
+	eng.POST("/webhook", cc.HandleStripeWebhook)
+
 	return cc
 }
 
@@ -89,11 +90,7 @@ func (cc *ClientClient) PayMasterOfCeremony(ctx *gin.Context) {
 	log.Println("Circuit Breaker State (Before Call):", state)
 
 	_, err := cc.CB.Execute(func() (interface{}, error) {
-		err := services.PayMasterOfCeremony(ctx, cc.Client)
-		if err != nil {
-			log.Println("Circuit Breaker Error:", err)
-			return nil, err
-		}
+		services.PayMasterOfCeremony(ctx, cc.Client)
 		return nil, nil
 	})
 
@@ -118,17 +115,6 @@ func (cc *ClientClient) HandleStripeWebhook(ctx *gin.Context) {
 	}
 }
 
-func (cc *ClientClient) VerifyPayment(ctx *gin.Context) {
-	_, err := cc.CB.Execute(func() (interface{}, error) {
-		services.VerifyPayment(ctx, cc.Client)
-		return nil, nil
-	})
-
-	if err != nil {
-		ctx.JSON(503, gin.H{"error": "Payment Service Unavailable"})
-		return
-	}
-}
 
 func (cc *ClientClient) HostEvent(ctx *gin.Context) {
 	_, err := cc.CB.Execute(func() (interface{}, error) {
