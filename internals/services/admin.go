@@ -180,3 +180,17 @@ func ViewCategory(ctx *gin.Context, c pb.AdminServiceClient) {
 	ctx.JSON(http.StatusOK, &res)
 
 }
+
+func GetAdminWalletTransactions(ctx *gin.Context, c pb.AdminServiceClient, cfg config.Config) {
+	grpcReq := &pb.GetAdminTransactionRequest{
+		Email: cfg.ADMIN_EMAIL,
+	}
+
+	res, err := c.GetAdminWalletTransactions(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}

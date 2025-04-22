@@ -50,8 +50,7 @@ func RegisterAdminRoutes(eng *gin.Engine, cfg *config.Config) *AdminClient {
 	routes.POST("/add-category", ac.AddCategory)
 	routes.GET("/dashboard", ac.AdminDashboard)
 	routes.GET("/wallet", ac.GetAdminWallet)
-	
-
+	routes.GET("/transactions", ac.GetAdminWalletTransactions)
 
 	return ac
 }
@@ -92,3 +91,6 @@ func (ac *AdminClient) ListCategory(ctx *gin.Context) {
 	services.ViewCategory(ctx, ac.Client)
 }
 
+func (ac *AdminClient) GetAdminWalletTransactions(ctx *gin.Context) {
+	services.GetAdminWalletTransactions(ctx, ac.Client, ac.Cfg)
+}
