@@ -537,6 +537,11 @@ func GetVendorsByCategory(ctx *gin.Context, c pb.ClientServiceClient) {
 		})
 	}
 
+	if len(vendors) == 0 {
+		ctx.JSON(http.StatusOK, gin.H{"message": "No vendors listed in this category"})
+		return
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data":    vendors,
@@ -569,8 +574,8 @@ func GetHostedEvents(ctx *gin.Context, c pb.ClientServiceClient) {
 	events := make([]gin.H, 0)
 	for _, event := range res.Events {
 		events = append(events, gin.H{
-			"eventId": event.EventId,
-			"title":   event.Title,
+			"event_id": event.EventId,
+			"title":    event.Title,
 			"location": gin.H{
 				"address":   event.Location.Address,
 				"city":      event.Location.City,
@@ -578,11 +583,12 @@ func GetHostedEvents(ctx *gin.Context, c pb.ClientServiceClient) {
 				"latitude":  event.Location.Latitude,
 				"longitude": event.Location.Longitude,
 			},
-			"date":           event.Date.AsTime().Format("2006-01-02"),
-			"description":    event.Description,
-			"pricePerTicket": event.PricePerTicket,
-			"ticketsSold":    event.TicketsSold,
-			"ticketLimit":    event.TicketLimit,
+			"date":             event.Date.AsTime().Format("2006-01-02"),
+			"description":      event.Description,
+			"price_per_ticket": event.PricePerTicket,
+			"start_time":       event.StartTime,
+			"end_time":         event.EndTime,
+			"ticket_limit":     event.TicketLimit,
 		})
 	}
 
