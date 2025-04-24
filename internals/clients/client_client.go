@@ -79,6 +79,10 @@ func RegisterClientClient(eng *gin.Engine, cfg *config.Config) *ClientClient {
 	routes.GET("/hosted-events", cc.GetHostedEvents)
 	routes.GET("/upcoming-events", cc.GetUpcomingEvents)
 	routes.GET("/vendor-profile", cc.GetVendorProfile)
+	routes.POST("/review-ratings", cc.AddClientReviewRatings)
+	routes.PUT("/review-ratings", cc.EditClientReviewRatings)
+	routes.DELETE("/review-ratings", cc.DeleteReview)
+	routes.GET("/review-ratings", cc.ViewClientReviewRatings)
 
 	eng.POST("/webhook", cc.HandleStripeWebhook)
 
@@ -114,7 +118,6 @@ func (cc *ClientClient) HandleStripeWebhook(ctx *gin.Context) {
 		return
 	}
 }
-
 
 func (cc *ClientClient) HostEvent(ctx *gin.Context) {
 	_, err := cc.CB.Execute(func() (interface{}, error) {
@@ -272,6 +275,62 @@ func (cc *ClientClient) GetUpcomingEvents(ctx *gin.Context) {
 func (cc *ClientClient) GetVendorProfile(ctx *gin.Context) {
 	_, err := cc.CB.Execute(func() (interface{}, error) {
 		services.GetVendorProfile(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) AddClientReviewRatings(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.AddClientReviewRatings(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) EditClientReviewRatings(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.EditClientReviewRatings(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) ViewClientReviewRatings(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.ViewClientReviewRatings(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) DeleteReview(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.DeleteReview(ctx, cc.Client)
 		return nil, nil
 
 	})

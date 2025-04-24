@@ -137,13 +137,14 @@ func CreateService(ctx *gin.Context, c pb.VendorSeviceClient) {
 	availableDate := timestamppb.New(body.AvailableDate)
 
 	res, err := c.CreateService(ctx, &pb.CreateServiceRequest{
-		VendorId:           vendorID.String(),
-		YearOfExperience:   body.YearOfExperience,
-		AvailableDates:     []*timestamppb.Timestamp{availableDate},
-		ServiceDescription: body.ServiceDescription,
-		ServiceDuration:    body.ServiceDuration,
-		ServicePrice:       body.ServicePrice,
-		ServiceTitle:       body.ServiceTitle,
+		VendorId:            vendorID.String(),
+		YearOfExperience:    body.YearOfExperience,
+		AvailableDates:      []*timestamppb.Timestamp{availableDate},
+		ServiceDescription:  body.ServiceDescription,
+		ServiceDuration:     body.ServiceDuration,
+		ServicePrice:        body.ServicePrice,
+		ServiceTitle:        body.ServiceTitle,
+		AdditionalHourPrice: body.AdditionalHourPrice,
 	})
 
 	if err != nil {

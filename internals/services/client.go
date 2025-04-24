@@ -13,6 +13,7 @@ import (
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/constants"
 	"github.com/AthulKrishna2501/zyra-api-gateway/internals/models"
 	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/config"
+	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/utils"
 	"github.com/AthulKrishna2501/zyra-api-gateway/pkg/validator"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -405,6 +406,11 @@ func GetBookings(ctx *gin.Context, c pb.ClientServiceClient) {
 		})
 	}
 
+	if len(bookings) == 0 {
+		ctx.JSON(http.StatusOK, gin.H{"message": "No bookings have been made"})
+		return
+	}
+
 	ctx.JSON(http.StatusOK, bookings)
 }
 
@@ -616,6 +622,8 @@ func GetUpcomingEvents(ctx *gin.Context, c pb.ClientServiceClient) {
 			"location":    event.Location,
 			"description": event.Description,
 			"posterImage": event.PosterImage,
+			"start_time":  event.StartTime.AsTime().Format("15:04"),
+			"end_time":    event.EndTime.AsTime().Format("15:04"),
 		})
 	}
 
@@ -663,4 +671,125 @@ func GetVendorProfile(ctx *gin.Context, c pb.ClientServiceClient) {
 			"vendorDetails": vendorDetails,
 		},
 	})
+}
+
+func AddClientReviewRatings(ctx *gin.Context, c pb.ClientServiceClient) {
+	var ReviewRatingsRequest models.ReviewRatingsRequest
+
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	if err := ctx.ShouldBindJSON(&ReviewRatingsRequest); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	err := utils.ValidateReviewRating(ReviewRatingsRequest.Rating, ReviewRatingsRequest.Review)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	grpcReq := &pb.AddReviewRatingsRequest{
+		ClientId: clientIDStr,
+		VendorId: ReviewRatingsRequest.VendorID,
+		Rating:   float32(ReviewRatingsRequest.Rating),
+		Review:   ReviewRatingsRequest.Review,
+	}
+
+	res, err := c.AddReviewRatings(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+
+}
+
+func EditClientReviewRatings(ctx *gin.Context, c pb.ClientServiceClient) {
+	var EditReviewRatingsRequest models.EditReviewRatingsRequest
+
+	if err := ctx.ShouldBindJSON(&EditReviewRatingsRequest); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	err := utils.ValidateReviewRating(EditReviewRatingsRequest.Rating, EditReviewRatingsRequest.Review)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	grpcReq := &pb.EditReviewRatingsRequest{
+		ReviewId: EditReviewRatingsRequest.ReviewID,
+		Rating:   float32(EditReviewRatingsRequest.Rating),
+		Review:   EditReviewRatingsRequest.Review,
+	}
+
+	res, err := c.EditReviewRatings(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func DeleteReview(ctx *gin.Context, c pb.ClientServiceClient) {
+	var DeleteReviewRequest models.DeleteReviewRequest
+
+	if err := ctx.ShouldBindJSON(&DeleteReviewRequest); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	grpcReq := &pb.DeleteReviewRequest{
+		ReviewId: DeleteReviewRequest.ReviewID,
+	}
+
+	res, err := c.DeleteReviewRatings(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func ViewClientReviewRatings(ctx *gin.Context, c pb.ClientServiceClient) {
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+	gprcReq := &pb.ViewClientReviewRatingsRequest{
+		ClientId: clientIDStr,
+	}
+
+	res, err := c.ViewClientReviewRatings(ctx, gprcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
 }

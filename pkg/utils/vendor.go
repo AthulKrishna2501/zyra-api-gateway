@@ -89,3 +89,15 @@ func ValidateUpdateRequest(req models.UpdateServiceRequest) error {
 
 	return nil
 }
+
+func ValidateReviewRating(ratings float64, review string) error {
+	if ratings > 10 || ratings < 0 {
+		return errors.New("please enter a valid rating")
+	}
+
+	if review == "" {
+		return errors.New("please provide a review before submitting")
+	}
+
+	return nil
+}

@@ -58,3 +58,19 @@ type BookVendorRequest struct {
 	Service  string `json:"service" binding:"required"`
 	Date     string `json:"date" binding:"required"`
 }
+
+type ReviewRatingsRequest struct {
+	VendorID string  `json:"vendor_id" binding:"required"`
+	Rating   float64 `json:"rating" binding:"required"`
+	Review   string  `json:"review"`
+}
+
+type EditReviewRatingsRequest struct {
+	ReviewID string  `json:"review_id" binding:"required"`
+	Rating   float64 `json:"rating" binding:"required"`
+	Review   string  `json:"review"`
+}
+
+type DeleteReviewRequest struct {
+	ReviewID string `json:"review_id"`
+}
