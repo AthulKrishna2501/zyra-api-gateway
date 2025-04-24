@@ -663,6 +663,8 @@ func GetVendorProfile(ctx *gin.Context, c pb.ClientServiceClient) {
 		"firstName":    res.VendorDetails.FirstName,
 		"categories":   res.VendorDetails.Categories,
 		"profileImage": res.VendorDetails.ProfileImage,
+		"rating":       res.VendorDetails.Rating,
+		"services":     res.VendorDetails.Services,
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
