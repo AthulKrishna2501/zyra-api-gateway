@@ -52,6 +52,8 @@ func RegisterVendorRoutes(eng *gin.Engine, cfg *config.Config) *VendorClient {
 	routes.GET("/dashboard", vc.VendorDashBoard)
 	routes.GET("/requests", vc.GetBookingRequests)
 	routes.POST("/approve-booking", vc.ApproveBooking)
+	routes.GET("/wallet", vc.GetVendorWallet)
+	routes.GET("/transactions", vc.GetVendorTransactions)
 
 	return vc
 }
@@ -99,3 +101,12 @@ func (vc *VendorClient) GetBookingRequests(ctx *gin.Context) {
 func (vc *VendorClient) ApproveBooking(ctx *gin.Context) {
 	services.ApproveBooking(ctx, vc.Client)
 }
+
+func (vc *VendorClient) GetVendorWallet(ctx *gin.Context) {
+	services.GetVendorWallet(ctx, vc.Client)
+}
+
+func (vc *VendorClient) GetVendorTransactions(ctx *gin.Context) {
+	services.GetVendorTransactions(ctx, vc.Client)
+}
+

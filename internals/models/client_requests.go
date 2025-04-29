@@ -1,9 +1,13 @@
 package models
 
-import "github.com/AthulKrishna2501/zyra-client-service/internals/core/models"
+import (
+	"github.com/AthulKrishna2501/zyra-client-service/internals/core/models"
+)
 
-type MasterOfCeremonyRequest struct {
-	Method string `json:"method"`
+type GenericBookingRequest struct {
+	Method      string            `json:"method"`
+	ServiceType string            `json:"service_type"`
+	Metadata    map[string]string `json:"metadata"`
 }
 
 type VerifyPaymentRequest struct {
@@ -54,9 +58,9 @@ type ResetPasswordRequest struct {
 }
 
 type BookVendorRequest struct {
-	VendorId string `json:"vendorId" binding:"required"`
-	Service  string `json:"service" binding:"required"`
-	Date     string `json:"date" binding:"required"`
+	VendorId  string `json:"vendor_id" binding:"required"`
+	ServiceId string `json:"service_id" binding:"required"`
+	Date      string `json:"date" binding:"required"`
 }
 
 type ReviewRatingsRequest struct {
@@ -73,4 +77,13 @@ type EditReviewRatingsRequest struct {
 
 type DeleteReviewRequest struct {
 	ReviewID string `json:"review_id"`
+}
+
+type CompleteVendorBookingRequest struct {
+	BookingID string `json:"booking_id"`
+	Status    string `json:"status"`
+}
+
+type CancelVendorBookingRequest struct {
+	BookingID  string `json:"booking_id"`
 }

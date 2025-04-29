@@ -22,8 +22,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func PayMasterOfCeremony(ctx *gin.Context, c pb.ClientServiceClient) {
-	var body models.MasterOfCeremonyRequest
+func CreateBookingPayment(ctx *gin.Context, c pb.ClientServiceClient) {
+	var body models.GenericBookingRequest
 
 	clientID, exists := ctx.Get("client_id")
 	log.Print("Client ID in token:", clientID)
@@ -48,14 +48,19 @@ func PayMasterOfCeremony(ctx *gin.Context, c pb.ClientServiceClient) {
 		return
 	}
 
-	grpcReq := &pb.MasterOfCeremonyRequest{
-		UserId: clientIDStr,
-		Method: body.Method,
+	if body.ServiceType == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "service_type is required"})
+		return
 	}
 
-	log.Print("userID in PayMasterOfCeremony:", clientIDStr)
+	grpcReq := &pb.GenericBookingRequest{
+		UserId:      clientIDStr,
+		Method:      body.Method,
+		ServiceType: body.ServiceType,
+		Metadata:    body.Metadata,
+	}
 
-	res, err := c.GetMasterOfCeremony(ctx, grpcReq)
+	res, err := c.CreateBookingSession(ctx, grpcReq)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -396,13 +401,14 @@ func GetBookings(ctx *gin.Context, c pb.ClientServiceClient) {
 			"booking_id": booking.BookingId,
 			"vendor_details": gin.H{
 				"vendor_id": booking.Vendor.VendorId,
-				"name":      booking.Vendor.Name,
-				"image":     booking.Vendor.Image,
+				"name":      booking.Vendor.GetName(),
 			},
-			"service": booking.Service,
-			"date":    booking.Date.AsTime().Format("2006-01-02"),
-			"price":   booking.Price,
-			"status":  booking.Status,
+			"service":             booking.Service,
+			"date":                booking.Date.AsTime().Format("2006-01-02"),
+			"price":               booking.Price,
+			"status":              booking.Status,
+			"service_duration":    booking.Duration,
+			"addition_hour_price": booking.AdditionalHourPrice,
 		})
 	}
 
@@ -489,10 +495,10 @@ func BookVendor(ctx *gin.Context, c pb.ClientServiceClient) {
 	}
 
 	grpcReq := &pb.BookVendorRequest{
-		ClientId: clientIDStr,
-		VendorId: req.VendorId,
-		Service:  req.Service,
-		Date:     timestamppb.New(bookingDate),
+		ClientId:  clientIDStr,
+		VendorId:  req.VendorId,
+		ServiceId: req.ServiceId,
+		Date:      timestamppb.New(bookingDate),
 	}
 
 	res, err := c.BookVendor(ctx, grpcReq)
@@ -616,14 +622,15 @@ func GetUpcomingEvents(ctx *gin.Context, c pb.ClientServiceClient) {
 	events := make([]gin.H, 0)
 	for _, event := range res.Events {
 		events = append(events, gin.H{
-			"eventId":     event.EventId,
-			"title":       event.Title,
-			"date":        event.Date.AsTime().Format("2006-01-02"),
-			"location":    event.Location,
-			"description": event.Description,
-			"posterImage": event.PosterImage,
-			"start_time":  event.StartTime.AsTime().Format("15:04"),
-			"end_time":    event.EndTime.AsTime().Format("15:04"),
+			"eventId":      event.EventId,
+			"title":        event.Title,
+			"date":         event.Date.AsTime().Format("2006-01-02"),
+			"location":     event.Location,
+			"description":  event.Description,
+			"posterImage":  event.PosterImage,
+			"start_time":   event.StartTime.AsTime().Format("15:04"),
+			"end_time":     event.EndTime.AsTime().Format("15:04"),
+			"ticket_price": event.PricePerTicket,
 		})
 	}
 
@@ -790,6 +797,136 @@ func ViewClientReviewRatings(ctx *gin.Context, c pb.ClientServiceClient) {
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func GetClientWallet(ctx *gin.Context, c pb.ClientServiceClient) {
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	grpcReq := &pb.GetWalletRequest{
+		ClientId: clientIDStr,
+	}
+
+	res, err := c.GetWallet(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func GetClientTransactions(ctx *gin.Context, c pb.ClientServiceClient) {
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	grpcReq := &pb.ViewClientTransactionsRequest{
+		ClientId: clientIDStr,
+	}
+
+	res, err := c.GetClientTransactions(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+
+}
+
+func CompleteVendorBooking(ctx *gin.Context, c pb.ClientServiceClient) {
+	var completeBookingRequest models.CompleteVendorBookingRequest
+
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	if err := ctx.ShouldBindJSON(&completeBookingRequest); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body", "details": err.Error()})
+		return
+	}
+
+	if completeBookingRequest.BookingID == "" || completeBookingRequest.Status == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Booking ID and Status are required"})
+		return
+	}
+
+	res, err := c.CompleteServiceBooking(ctx, &pb.CompleteServiceBookingRequest{
+		BookingId: completeBookingRequest.BookingID,
+		ClientId:  clientIDStr,
+		Status:    completeBookingRequest.Status,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to complete booking", "details": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": res.Message,
+	})
+}
+
+func CancelVendorBooking(ctx *gin.Context, c pb.ClientServiceClient) {
+	var req models.CancelVendorBookingRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	grpcReq := &pb.CancelVendorBookingRequest{
+		ClientId:  clientIDStr,
+		BookingId: req.BookingID,
+	}
+
+	res, err := c.CancelVendorBooking(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to complete booking", "details": err.Error()})
 		return
 	}
 

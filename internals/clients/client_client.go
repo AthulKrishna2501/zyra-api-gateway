@@ -66,7 +66,7 @@ func RegisterClientClient(eng *gin.Engine, cfg *config.Config) *ClientClient {
 
 	routes := eng.Group("/client")
 	routes.Use(middleware.ClientAuthMiddleware(config.RedisClient))
-	routes.POST("/mc/payment", cc.PayMasterOfCeremony)
+	routes.POST("/mc/payment", cc.CreateBookingPayment)
 	routes.POST("/host-event", cc.HostEvent)
 	routes.PUT("/edit-event", cc.EditEvent)
 	routes.GET("/profile", cc.ClientProfile)
@@ -83,18 +83,22 @@ func RegisterClientClient(eng *gin.Engine, cfg *config.Config) *ClientClient {
 	routes.PUT("/review-ratings", cc.EditClientReviewRatings)
 	routes.DELETE("/review-ratings", cc.DeleteReview)
 	routes.GET("/review-ratings", cc.ViewClientReviewRatings)
+	routes.GET("/wallet", cc.GetClientWallet)
+	routes.GET("/transactions", cc.GetClientTransactions)
+	routes.POST("/complete-booking", cc.CompleteVendorBooking)
+	routes.POST("cancel-booking",cc.CancelVendorBooking)
 
 	eng.POST("/webhook", cc.HandleStripeWebhook)
 
 	return cc
 }
 
-func (cc *ClientClient) PayMasterOfCeremony(ctx *gin.Context) {
+func (cc *ClientClient) CreateBookingPayment(ctx *gin.Context) {
 	state := cc.CB.State().String()
 	log.Println("Circuit Breaker State (Before Call):", state)
 
 	_, err := cc.CB.Execute(func() (interface{}, error) {
-		services.PayMasterOfCeremony(ctx, cc.Client)
+		services.CreateBookingPayment(ctx, cc.Client)
 		return nil, nil
 	})
 
@@ -331,6 +335,62 @@ func (cc *ClientClient) ViewClientReviewRatings(ctx *gin.Context) {
 func (cc *ClientClient) DeleteReview(ctx *gin.Context) {
 	_, err := cc.CB.Execute(func() (interface{}, error) {
 		services.DeleteReview(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) GetClientWallet(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.GetClientWallet(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) GetClientTransactions(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.GetClientTransactions(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) CompleteVendorBooking(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.CompleteVendorBooking(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) CancelVendorBooking(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.CancelVendorBooking(ctx, cc.Client)
 		return nil, nil
 
 	})
