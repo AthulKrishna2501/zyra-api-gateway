@@ -295,6 +295,7 @@ func GetBookingRequests(ctx *gin.Context, c pb.VendorSeviceClient) {
 			"date":       booking.Date.AsTime().Format("2006-01-02"),
 			"price":      booking.Price,
 			"status":     booking.Status,
+			"booked_at":  booking.BookedAt,
 		})
 	}
 
@@ -320,6 +321,11 @@ func ApproveBooking(ctx *gin.Context, c pb.VendorSeviceClient) {
 		return
 	}
 
+	if req.Status != "approved" && req.Status != "rejected" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status"})
+		return
+	}
+
 	grpcReq := &pb.ApproveBookingRequest{
 		BookingId: req.BookingID,
 		VendorId:  vendorID.String(),
@@ -336,4 +342,45 @@ func ApproveBooking(ctx *gin.Context, c pb.VendorSeviceClient) {
 		"success": true,
 		"message": res.Message,
 	})
+}
+
+func GetVendorWallet(ctx *gin.Context, c pb.VendorSeviceClient) {
+	vendorID, ok := utils.GetVendorID(ctx)
+	if !ok {
+		return
+	}
+
+	grpcReq := &pb.GetVendorWalletRequest{
+		VendorId: vendorID.String(),
+	}
+
+	res, err := c.GetVendorWallet(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to approve booking", "details": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+
+}
+
+func GetVendorTransactions(ctx *gin.Context, c pb.VendorSeviceClient) {
+	vendorID, ok := utils.GetVendorID(ctx)
+	if !ok {
+		return
+	}
+
+	grpcReq := &pb.ViewVendorTransactionsRequest{
+		VendorId: vendorID.String(),
+	}
+
+	res, err := c.GetVendorTransactions(ctx, grpcReq)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to approve booking", "details": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+
 }
