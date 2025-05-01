@@ -3,7 +3,7 @@ module github.com/AthulKrishna2501/zyra-api-gateway
 go 1.24.2
 
 require (
-	github.com/AthulKrishna2501/proto-repo v0.0.0-20250429051728-570c302c961f
+	github.com/AthulKrishna2501/proto-repo v0.0.0-20250501093137-7d59a00c9ff0
 	github.com/AthulKrishna2501/zyra-client-service v0.0.0-20250410061311-ceec8eb94751
 	github.com/gin-contrib/cors v1.7.4
 	github.com/gin-gonic/gin v1.10.0
@@ -19,7 +19,7 @@ require (
 )
 
 require (
-	github.com/AthulKrishna2501/zyra-auth-service v0.0.0-20250403122759-753f0bdbe42c // indirect
+	github.com/AthulKrishna2501/zyra-auth-service v0.0.0-20250423072851-8d3be65bee5c // indirect
 	github.com/bytedance/sonic v1.13.1 // indirect
 	github.com/bytedance/sonic/loader v0.2.4 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

@@ -9,3 +9,8 @@ type CategoryApproveReject struct {
 type AddCategoryRequest struct {
 	CategoryName string `json:"category_name" binding:"required"`
 }
+
+type ApproveFundReleaseRequest struct {
+	RequestID string `json:"request_id"`
+	Status    string `json:"status"`
+}

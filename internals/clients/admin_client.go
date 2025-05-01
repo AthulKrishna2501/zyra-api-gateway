@@ -51,6 +51,8 @@ func RegisterAdminRoutes(eng *gin.Engine, cfg *config.Config) *AdminClient {
 	routes.GET("/dashboard", ac.AdminDashboard)
 	routes.GET("/wallet", ac.GetAdminWallet)
 	routes.GET("/transactions", ac.GetAdminWalletTransactions)
+	routes.GET("/fund-release", ac.GetFundRelease)
+	routes.PUT("/fund-release", ac.ApproveFundRelease)
 
 	return ac
 }
@@ -93,4 +95,12 @@ func (ac *AdminClient) ListCategory(ctx *gin.Context) {
 
 func (ac *AdminClient) GetAdminWalletTransactions(ctx *gin.Context) {
 	services.GetAdminWalletTransactions(ctx, ac.Client, ac.Cfg)
+}
+
+func (ac *AdminClient) GetFundRelease(ctx *gin.Context) {
+	services.GetFundRelease(ctx, ac.Client)
+}
+
+func (ac *AdminClient) ApproveFundRelease(ctx *gin.Context) {
+	services.ApproveFundRelease(ctx, ac.Client)
 }

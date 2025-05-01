@@ -194,3 +194,39 @@ func GetAdminWalletTransactions(ctx *gin.Context, c pb.AdminServiceClient, cfg c
 
 	ctx.JSON(http.StatusOK, res)
 }
+
+func GetFundRelease(ctx *gin.Context, c pb.AdminServiceClient) {
+	grpcReq := &pb.FundReleaseRequest{}
+
+	res, err := c.GetFundRelease(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func ApproveFundRelease(ctx *gin.Context, c pb.AdminServiceClient) {
+	var req models.ApproveFundReleaseRequest
+
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	grpReq := &pb.ApproveFundReleaseRequest{
+		RequestId: req.RequestID,
+		Status:    req.Status,
+	}
+
+	res, err := c.ApproveFundRelease(ctx, grpReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
