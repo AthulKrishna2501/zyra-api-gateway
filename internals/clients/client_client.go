@@ -86,7 +86,10 @@ func RegisterClientClient(eng *gin.Engine, cfg *config.Config) *ClientClient {
 	routes.GET("/wallet", cc.GetClientWallet)
 	routes.GET("/transactions", cc.GetClientTransactions)
 	routes.POST("/complete-booking", cc.CompleteVendorBooking)
-	routes.POST("cancel-booking",cc.CancelVendorBooking)
+	routes.POST("cancel-booking", cc.CancelVendorBooking)
+	routes.POST("/cancel-event", cc.CancelEvent)
+	routes.GET("/tickets", cc.GetTickets)
+	routes.POST("/fund-release", cc.FundRelease)
 
 	eng.POST("/webhook", cc.HandleStripeWebhook)
 
@@ -391,6 +394,48 @@ func (cc *ClientClient) CompleteVendorBooking(ctx *gin.Context) {
 func (cc *ClientClient) CancelVendorBooking(ctx *gin.Context) {
 	_, err := cc.CB.Execute(func() (interface{}, error) {
 		services.CancelVendorBooking(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) CancelEvent(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.CancelEvent(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) GetTickets(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.GetTickets(ctx, cc.Client)
+		return nil, nil
+
+	})
+
+	if err != nil {
+		ctx.JSON(503, gin.H{"error": "Client Service Unavailable"})
+		return
+
+	}
+}
+
+func (cc *ClientClient) FundRelease(ctx *gin.Context) {
+	_, err := cc.CB.Execute(func() (interface{}, error) {
+		services.FundRelease(ctx, cc.Client)
 		return nil, nil
 
 	})

@@ -85,5 +85,13 @@ type CompleteVendorBookingRequest struct {
 }
 
 type CancelVendorBookingRequest struct {
-	BookingID  string `json:"booking_id"`
+	BookingID string `json:"booking_id"`
+}
+
+type CancelEventRequest struct {
+	EventID string `json:"event_id"`
+}
+
+type FundReleaseRequest struct {
+	EventID string `json:"event_id"`
 }

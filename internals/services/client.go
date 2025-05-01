@@ -598,8 +598,8 @@ func GetHostedEvents(ctx *gin.Context, c pb.ClientServiceClient) {
 			"date":             event.Date.AsTime().Format("2006-01-02"),
 			"description":      event.Description,
 			"price_per_ticket": event.PricePerTicket,
-			"start_time":       event.StartTime,
-			"end_time":         event.EndTime,
+			"start_time":       event.StartTime.AsTime().Format("15:04"),
+			"end_time":         event.EndTime.AsTime().Format("15:04"),
 			"ticket_limit":     event.TicketLimit,
 		})
 	}
@@ -927,6 +927,108 @@ func CancelVendorBooking(ctx *gin.Context, c pb.ClientServiceClient) {
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to complete booking", "details": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func GetTickets(ctx *gin.Context, c pb.ClientServiceClient) {
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	grpcReq := &pb.GetBookedTicketsRequest{
+		ClientId: clientIDStr,
+	}
+
+	res, err := c.GetBookedTickets(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func CancelEvent(ctx *gin.Context, c pb.ClientServiceClient) {
+	var req models.CancelEventRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	if req.EventID == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Event ID is required"})
+		return
+	}
+
+	grpcReq := &pb.CancelEventRequest{
+		ClientId: clientIDStr,
+		EventId:  req.EventID,
+	}
+
+	res, err := c.CancelEvent(ctx, grpcReq)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to cancel event", "details": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+
+}
+
+func FundRelease(ctx *gin.Context, c pb.ClientServiceClient) {
+	var req models.FundReleaseRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	clientID, exists := ctx.Get("client_id")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Client ID not found in token"})
+		return
+	}
+
+	clientIDStr, ok := clientID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client ID format"})
+		return
+	}
+
+	grpReq := &pb.FundReleaseRequest{
+		ClientId: clientIDStr,
+		EventId:  req.EventID,
+	}
+
+	res, err := c.RequestFundRelease(ctx, grpReq)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
