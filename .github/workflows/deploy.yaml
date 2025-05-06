@@ -40,7 +40,7 @@ jobs:
         key: ${{ secrets.EC2_KEY }}
         script: |
           echo "${{ secrets.DOCKERHUB_PASSWORD }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          SERVICES="zyra-api-gateway zyra-auth-service zyra-client-service zyra-admin-service zyra-msg-service zyra-vendor-service"
+          SERVICES="zyra-mometns-api-gateway zyra-moments-auth-service zyra-moments-client-service zyra-moments-admin-service zyra-moments-msg-service zyra-moments-vendor-service"
           for SERVICE in $SERVICES; do
             echo "Deploying $SERVICE"
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/$SERVICE:latest
