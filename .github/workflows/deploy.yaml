@@ -27,7 +27,7 @@ jobs:
       run: |
         SERVICES="zyra-api-gateway zyra-auth-service zyra-client-service zyra-admin-service zyra-msg-service zyra-vendor-service"
         for SERVICE in $SERVICES; do
-          docker build -t $DOCKERHUB_USERNAME/$SERVICE:latest ./$SERVICE
+          docker build -t $DOCKERHUB_USERNAME/$SERVICE:latest 
           docker push $DOCKERHUB_USERNAME/$SERVICE:latest
         done
 
