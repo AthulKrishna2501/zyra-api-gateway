@@ -50,8 +50,8 @@ jobs:
           cd /home/ubuntu
 
           # Pull the latest images for all services using docker-compose
-          sudo docker-compose pull
+          sudo docker compose pull
 
           # Stop and remove any existing containers, then start the new containers
-          sudo docker-compose down  # Stops and removes containers
-          sudo docker-compose up -d # Starts the containers in detached mode
+          sudo docker compose down  # Stops and removes containers
+          sudo docker compose up -d # Starts the containers in detached mode
