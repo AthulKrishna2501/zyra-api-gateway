@@ -22,7 +22,7 @@ type Config struct {
 	STRIPE_SECRET_KEY     string `mapstructure:"STRIPE_SECRET_KEY"`
 	STRIPE_WEBHOOK_SECRET string `mapstructure:"STRIPE_WEBHOOK_SECRET"`
 	ADMIN_EMAIL           string `mapstructure:"ADMIN_EMAIL"`
-	ENVIRONMENT           string `mapstructure:"ENVIRONMENT"`
+	SECRET_NAME           string `mapstructure:"SECRET_NAME"`
 }
 
 func LoadConfig() (cfg Config, err error) {
