@@ -29,7 +29,7 @@ jobs:
       - name: Detect changed services
         id: changed
         run: |
-          CHANGED_DIRS=$(git diff --name-only HEAD^ HEAD | grep -E 'zyra-.*-service' | awk -F '/' '{print $1}' | sort -u)j
+          CHANGED_DIRS=$(git diff --name-only HEAD^ HEAD | grep -E 'zyra-.*-service' | awk -F '/' '{print $1}' | sort -u)
           echo "CHANGED_DIRS=$CHANGED_DIRS" >> $GITHUB_OUTPUT
 
       # Build and push Docker images for changed services
