@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'zyra-*/**' # Trigger on changes to any microservice directory
+      - 'docker-compose.yml' # Trigger on changes to docker-compose.yml
 
 jobs:
   # Stage 1: Build and Push Docker Images
@@ -65,16 +66,12 @@ jobs:
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ssh_key ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-            # Navigate to project directory
-            cd ~/zyra-moments
-            
-            # Pull the latest docker-compose.yml
-            git pull origin main
-            
-            # Pull the latest images
-            docker-compose pull
-            
-            # Restart containers
-            docker-compose up -d
-          EOF
 
+            docker compose down { echo "Docker compose down failed"; exit 1; }
+      
+            # Pull the latest images
+            docker compose pull || { echo "Docker compose pull failed"; exit 1; }
+
+            # Restart containers
+            docker compose up -d || { echo "Docker compose up failed"; exit 1; }
+          EOF
