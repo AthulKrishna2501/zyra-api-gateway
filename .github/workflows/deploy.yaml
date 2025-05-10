@@ -39,11 +39,18 @@ jobs:
           echo "Listing root directory:"
           ls -l
           for SERVICE in $SERVICES; do
-            echo "Building $DOCKERHUB_USERNAME/zyra-moments-$SERVICE"
+            # Remove 'zyra-' prefix from service name for image naming
+            IMAGE_NAME=$(echo $SERVICE | sed 's/zyra-//')
+            echo "Building $DOCKERHUB_USERNAME/zyra-moments-$IMAGE_NAME:latest"
             if [ -d "$SERVICE" ]; then
               cd $SERVICE
-              docker build -t $DOCKERHUB_USERNAME/zyra-moments-$SERVICE:latest .
-              docker push $DOCKERHUB_USERNAME/zyra-moments-$SERVICE:latest
+              if [ -f "dockerfile" ]; then
+                docker build -f dockerfile -t $DOCKERHUB_USERNAME/zyra-moments-$IMAGE_NAME:latest .
+              else
+                echo "Dockerfile not found in $SERVICE"
+                exit 1
+              fi
+              docker push $DOCKERHUB_USERNAME/zyra-moments-$IMAGE_NAME:latest
               cd ..
             else
               echo "Directory $SERVICE not found"
