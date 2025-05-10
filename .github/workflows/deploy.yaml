@@ -41,7 +41,7 @@ jobs:
           for SERVICE in $SERVICES; do
             echo "Building $DOCKERHUB_USERNAME/zyra-moments-$SERVICE"
             if [ -d "services/$SERVICE" ]; then
-              cd services/$SERVICE
+              cd /$SERVICE
               docker build -t $DOCKERHUB_USERNAME/zyra-moments-$SERVICE:latest .
               docker push $DOCKERHUB_USERNAME/zyra-moments-$SERVICE:latest
               cd ../..
