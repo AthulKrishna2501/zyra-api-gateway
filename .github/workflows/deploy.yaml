@@ -11,7 +11,7 @@ jobs:
 
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       EC2_HOST: ${{ secrets.EC2_HOST }}
       EC2_USER: ${{ secrets.EC2_USER }}
       EC2_KEY: ${{ secrets.EC2_KEY }}
@@ -20,22 +20,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # - name: Debug Repository Structure
-      #   run: |
-      #     echo "Current working directory: $(pwd)"
-      #     ls -la
-      #     find . -type d -maxdepth 1
-      #     echo "Checking for service directories:"
-      #     for SERVICE in zyra-api-gateway zyra-auth-service zyra-client-service zyra-admin-service zyra-msg-service zyra-vendor-service; do
-      #       if [ -d "$SERVICE" ]; then
-      #         echo "$SERVICE exists"
-      #       else
-      #         echo "$SERVICE does not exist"
-      #       fi
-      #     done
-
       - name: Log in to Docker Hub
-        run: echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+        run: echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
       - name: Docker Build & Push
         run: |
@@ -49,14 +35,14 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            whoami
-            echo "Current directory: $(pwd)"
-            docker --version
-            docker compose version
+            echo "Setting up Docker Hub login on EC2..."
+            export DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
+            export DOCKERHUB_TOKEN="${{ secrets.DOCKERHUB_TOKEN }}"
 
+            # Now Docker login with the token on EC2
             echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin || { echo "Docker login failed"; exit 1; }
 
+            # Docker compose commands
             docker compose down || { echo "Docker compose down failed"; exit 1; }
-
             docker compose pull || { echo "Docker compose pull failed"; exit 1; }
             docker compose up -d || { echo "Docker compose up failed"; exit 1; }
