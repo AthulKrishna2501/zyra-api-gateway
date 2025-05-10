@@ -36,17 +36,17 @@ jobs:
       - name: Build and Push Docker Images
         run: |
           SERVICES="zyra-api-gateway zyra-auth-service zyra-client-service zyra-admin-service zyra-msg-service zyra-vendor-service"
-          echo "Listing services directory:"
-          ls -l services/ || { echo "services/ directory not found"; exit 1; }
+          echo "Listing root directory:"
+          ls -l
           for SERVICE in $SERVICES; do
             echo "Building $DOCKERHUB_USERNAME/zyra-moments-$SERVICE"
-            if [ -d "services/$SERVICE" ]; then
-              cd /$SERVICE
+            if [ -d "$SERVICE" ]; then
+              cd $SERVICE
               docker build -t $DOCKERHUB_USERNAME/zyra-moments-$SERVICE:latest .
               docker push $DOCKERHUB_USERNAME/zyra-moments-$SERVICE:latest
-              cd ../..
+              cd ..
             else
-              echo "Directory services/$SERVICE not found"
+              echo "Directory $SERVICE not found"
               exit 1
             fi
           done
