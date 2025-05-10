@@ -17,13 +17,10 @@ jobs:
       EC2_KEY: ${{ secrets.EC2_KEY }}
 
     steps:
-      # Step 1: Checkout the code from GitHub
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Debug repository structure
       - name: Debug Repository Structure
-        working-directory: ${{ github.workspace }}
         run: |
           echo "Current working directory: $(pwd)"
           ls -la
@@ -37,38 +34,37 @@ jobs:
             fi
           done
 
-      # Step 3: Log into Docker Hub
       - name: Log in to Docker Hub
         run: echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
-      # Step 4: Build and Push Docker Images to Docker Hub
       - name: Build and Push Docker Images
-        working-directory: ${{ github.workspace }}
         run: |
           SERVICES="zyra-api-gateway zyra-auth-service zyra-client-service zyra-admin-service zyra-msg-service zyra-vendor-service"
-          echo "Listing root directory:"
-          ls -l
           for SERVICE in $SERVICES; do
-            # Remove 'zyra-' prefix from service name for image naming
             IMAGE_NAME=$(echo $SERVICE | sed 's/zyra-//')
-            echo "Building $DOCKERHUB_USERNAME/zyra-moments-$IMAGE_NAME:latest"
+            IMAGE_TAG="$DOCKERHUB_USERNAME/zyra-moments-$IMAGE_NAME:latest"
+
+            echo "Processing service: $SERVICE"
+
             if [ -d "$SERVICE" ]; then
-              cd $SERVICE
-              if [ -f "dockerfile" ]; then
-                docker build -f dockerfile -t $DOCKERHUB_USERNAME/zyra-moments-$IMAGE_NAME:latest .
+              if [ -f "$SERVICE/dockerfile" ]; then
+                echo "Found dockerfile (lowercase) in $SERVICE"
+                docker build -f $SERVICE/dockerfile -t $IMAGE_TAG $SERVICE
+              elif [ -f "$SERVICE/Dockerfile" ]; then
+                echo "Found Dockerfile (uppercase) in $SERVICE"
+                docker build -f $SERVICE/Dockerfile -t $IMAGE_TAG $SERVICE
               else
-                echo "Dockerfile not found in $SERVICE"
+                echo "No Dockerfile found in $SERVICE"
                 exit 1
               fi
-              docker push $DOCKERHUB_USERNAME/zyra-moments-$IMAGE_NAME:latest
-              cd ..
+
+              docker push $IMAGE_TAG
             else
               echo "Directory $SERVICE not found"
               exit 1
             fi
           done
 
-      # Step 5: Deploy to EC2 via SSH using docker-compose
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -76,20 +72,14 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            # Debug: Verify SSH connection and environment
             whoami
             echo "Current directory: $(pwd)"
             docker --version
             docker compose version
 
-            # Log in to Docker Hub
             echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin || { echo "Docker login failed"; exit 1; }
 
-            # Navigate to the directory where docker-compose.yml is located
             cd /home/ubuntu || { echo "Directory /home/ubuntu not found"; exit 1; }
 
-            # Pull the latest images for all services
             docker compose pull || { echo "Docker compose pull failed"; exit 1; }
-
-            # Start the new containers
             docker compose up -d || { echo "Docker compose up failed"; exit 1; }
