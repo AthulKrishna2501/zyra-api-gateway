@@ -23,10 +23,19 @@ jobs:
 
       # Step 2: Debug repository structure
       - name: Debug Repository Structure
+        working-directory: ${{ github.workspace }}
         run: |
-          pwd
+          echo "Current working directory: $(pwd)"
           ls -la
-          find . -type d
+          find . -type d -maxdepth 1
+          echo "Checking for service directories:"
+          for SERVICE in zyra-api-gateway zyra-auth-service zyra-client-service zyra-admin-service zyra-msg-service zyra-vendor-service; do
+            if [ -d "$SERVICE" ]; then
+              echo "$SERVICE exists"
+            else
+              echo "$SERVICE does not exist"
+            fi
+          done
 
       # Step 3: Log into Docker Hub
       - name: Log in to Docker Hub
@@ -34,6 +43,7 @@ jobs:
 
       # Step 4: Build and Push Docker Images to Docker Hub
       - name: Build and Push Docker Images
+        working-directory: ${{ github.workspace }}
         run: |
           SERVICES="zyra-api-gateway zyra-auth-service zyra-client-service zyra-admin-service zyra-msg-service zyra-vendor-service"
           echo "Listing root directory:"
