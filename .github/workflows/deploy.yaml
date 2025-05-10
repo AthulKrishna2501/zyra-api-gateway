@@ -1,74 +1,61 @@
-name: CI/CD Pipeline
+name: Build and Deploy to EC2
 
 on:
   push:
     branches:
       - main
-
 jobs:
-  # Stage 1: Build and Push Docker Images
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER }}
+      EC2_KEY: ${{ secrets.EC2_KEY }}
+
     steps:
-      # Checkout the repository
-      - name: Checkout code
-        uses: actions/checkout@v4
+    # Step 1: Checkout the code from GitHub
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      # Set up Docker Buildx
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    # Step 2: Log into Docker Hub
+    - name: Log in to Docker Hub
+      run: echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
-      # Log in to Docker Hub
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+    # Step 3: Build and Push Docker Images to Docker Hub
+    - name: Build and Push Docker Images
+      run: |
+        SERVICES="zyra-api-gateway zyra-auth-service zyra-client-service zyra-admin-service zyra-msg-service zyra-vendor-service"
+        for SERVICE in $SERVICES; do
+          echo "Building devathul/zyra-moments-$SERVICE"
+          cd $SERVICE
+          docker build -t $DOCKERHUB_USERNAME/zyra-moments-$SERVICE:latest .
+          docker push $DOCKERHUB_USERNAME/zyra-moments-$SERVICE:latest
+          cd ..
+        done
 
-      # Determine which service changed
-      - name: Detect changed services
-        id: changed
-        run: |
-          CHANGED_DIRS=$(git diff --name-only HEAD^ HEAD | grep -E 'zyra-.*-service' | awk -F '/' '{print $1}' | sort -u)
-          echo "CHANGED_DIRS=$CHANGED_DIRS" >> $GITHUB_OUTPUT
+    # Step 4: Deploy to EC2 via SSH using docker-compose
+    - name: Deploy to EC2 via SSH
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_KEY }}
+        script: |
+          # Debug: Verify SSH connection
+          whoami
+          echo "Current directory: $(pwd)"
 
-      # Build and push Docker images for changed services
-      - name: Build and push Docker images
-        if: steps.changed.outputs.CHANGED_DIRS != ''
-        run: |
-          for service in ${{ steps.changed.outputs.CHANGED_DIRS }}; do
-            cd $service
-            docker build -t devathul/zyra-moments-${service#zyra-}:latest -f dockerfile .
-            docker push devathul/zyra-moments-${service#zyra-}:latest
-            cd ..
-          done
+          # Log in to Docker Hub
+          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin || { echo "Docker login failed"; exit 1; }
 
-  # Stage 2: Deploy to EC2
-  deploy-ec2:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      # Checkout the repository
-      - name: Checkout code
-        uses: actions/checkout@v4
+          # Navigate to the directory where docker-compose.yml is located
+          cd /home/ubuntu || { echo "Directory not found"; exit 1; }
 
-      # Set up SSH key for EC2
-      - name: Install SSH key
-        run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > ssh_key
-          chmod 600 ssh_key
+          # Pull the latest images for all services
+          docker compose pull || { echo "Docker compose pull failed"; exit 1; }
 
-      # Deploy to EC2
-      - name: Deploy to EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ssh_key ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-
-            docker compose down { echo "Docker compose down failed"; exit 1; }
-      
-            # Pull the latest images
-            docker compose pull || { echo "Docker compose pull failed"; exit 1; }
-
-            # Restart containers
-            docker compose up -d || { echo "Docker compose up failed"; exit 1; }
-          EOF
+          # Start the new containers
+          docker compose up -d || { echo "Docker compose up failed"; exit 1; }
